@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    Consultorio Digital - Mis horas
+{% endblock %}
+
+{% block navbar %}
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
+        </li>
+        <li class="nav-item active">
+            <a class="nav-link active" href="{% url 'mis_horas' %}">Mis horas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'consultorio' %}">Reservar hora</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+        </li>
+        <li class="nav-item">
+            <form id="frm_logout" method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <a class="nav-link" href="javascript:$('#frm_logout').submit();">Cerrar sesión</a>
+            </form>
+        </li>
+    </ul>
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/>
+{% endblock %}
+
+{% block extrascripts %}
+    <script type="text/JavaScript" src="{% static 'js/consultorio.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2 class="mb-4" style="color:white;">Mis horas agendadas ⏰</h2>
+        <table class="table table-dark" style="background-color:rgba(0, 0, 0, 0);">
+            <thead class="thead">
+                <tr>
+                    <th>Nombre del Consultorio</th>
+                    <th>Hora Agendada</th>
+                    <th>Razón de Agendar</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody class="table-striped table-hover">
+                <tr>
+                    <td>Centro de Salud Familiar</td>
+                    <td>2024-07-15 09:00</td>
+                    <td>Consulta Dental</td>
+                    <td>Confirmada ✅</td>
+                </tr>
+                <tr>
+                    <td>Centro de Salud Familiar</td>
+                    <td>2024-07-16 11:00</td>
+                    <td>Control Médico</td>
+                    <td>Confirmada ✅</td>
+                </tr>
+                <tr>
+                    <td>Centro de Salud Familiar</td>
+                    <td>2024-07-17 14:00</td>
+                    <td>Consulta General</td>
+                    <td>Confirmada ✅</td>
+                </tr>
+                <tr>
+                    <td>Centro de Salud Familiar</td>
+                    <td>2024-07-18 10:00</td>
+                    <td>Consulta General</td>
+                    <td>En espera de profesional</td>
+                </tr>
+                <tr>
+                    <td>Centro de Salud Familiar</td>
+                    <td>2024-07-19 08:30</td>
+                    <td>Consulta General</td>
+                    <td>En espera de profesional</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

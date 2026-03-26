@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+    <head>
+        <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.ico' %}"/>
+        <meta charset="UTF-16" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            {% block title %}
+            Consultorio Digital
+            {% endblock %}
+        </title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="{% static 'css/navbar.css' %}" rel="stylesheet"/>
+        {% block extra_css %}{% endblock %}
+    </head>
+    <body>
+        <nav class="navbar navbar-light bg-light">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'principal:principal' %}">
+                <img src="{% static 'img/logo_gobierno_chile.svg' %}" width="30" height="30" alt="Logo" style="margin-right:20px"/>
+                Consultorio <span class="text-primary">Digital</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% block navbar %}
+                {% endblock %}
+                {% if user.is_authenticated %}
+                    <span class="navbar-text">
+                        Bienvenido, {{user.first_name}}
+                    </span>
+                {% endif %}
+            </div>
+        </nav>
+        <div class="container-fluid">
+            {% block content %}
+            {% endblock %}
+        </div>
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+        {% block extrascripts %}{% endblock %}
+    </body>
+</html>

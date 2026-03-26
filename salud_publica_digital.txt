@@ -1,0 +1,82 @@
+-- database: ./db.sqlite3
+
+-- Use the ▷ button in the top right corner to run the entire file.
+
+-- Repositorio: https://github.com/adinamarca/salud_publica_digital/
+
+-- CONSULTAS SELECT --
+-- SELECT 
+--    p.usuario_id AS paciente_rut
+-- FROM 
+--    consultorio_paciente paciente
+-- INNER JOIN 
+--    consultorio_administrador administrador
+--    ON paciente.usuario_id = administrador.usuario_id;
+
+-- Álgebra relacional: π usuario_id (σ paciente.usuario_id=administrador.usuario_id (consultorio_paciente×consultorio_administrador))
+
+-- SELECT 
+--     reserva.id AS reserva_id,
+--     reserva.fecha_reserva,
+--     consultorio.nombre AS consultorio_nombre,
+--     paciente.nombre AS paciente_nombre
+-- FROM 
+--     consultorio_reserva reserva
+-- LEFT JOIN 
+--     consultorio_usuario paciente 
+-- ON reserva.paciente_id = paciente.rut
+-- LEFT JOIN 
+--     consultorio_consultorio consultorio
+-- ON reserva.consultorio_id = consultorio.objectid;
+
+-- Álgebra relacional: π id,fecha_reserva,consultorio.nombre,paciente.nombre((consultorio_reserva⋈ reserva.paciente_id=paciente.rut
+consultorio_usuario)∪(consultorio_reserva×consultorio_usuario))⋈ 
+reserva.consultorio_id=consultorio.objectid consultorio_consultorio
+
+-- SELECT
+--     consultorio.c_com,
+--     COUNT(consultorio.modalidad) AS cantidad
+-- FROM
+--     consultorio_consultorio consultorio
+-- GROUP BY
+--     consultorio.c_com
+
+-- Álgebra relacional: γ c_com,COUNT(modalidad) AS cantidad (consultorio_consultorio)
+
+-- CONSULTAS ALTER --
+-- ALTER TABLE consultorio_paciente
+-- ADD COLUMN alergias VARCHAR(255);
+
+-- ALTER TABLE consultorio_paciente
+-- ADD COLUMN telefono TYPE VARCHAR(20);
+
+-- CONSULTAS PARA ACTUALIZAR --
+-- UPDATE consultorio_usuario
+-- SET telefono = '123456789'
+-- WHERE rut = '90265184-5';
+-- 
+-- UPDATE consultorio_consultorio
+-- SET tipo = 'Teleconsulta'
+-- WHERE objectid = 1;
+
+-- CONSULTAS PARA ELIMINAR --
+-- DELETE FROM consultorio_paciente
+-- WHERE id = '90265184-5';
+-- 
+-- DELETE FROM consultorio_atencion
+-- WHERE medicacion = 'Medicación 1';
+
+-- CONSULTAS PARA INSERTAR --
+-- INSERT INTO consultorio_usuario (rut, nombre, apellido, fecha_nacimiento, direccion, telefono, correo)
+-- VALUES ('20302411-5', 'Alejandro', 'Dinamarca', '1996-06-06', 'Calle Falsa 123', '123456789', 'colihue@gmail.com')
+
+-- INSERT INTO consultorio_usuario (rut, nombre, apellido, fecha_nacimiento, direccion, telefono, correo)
+-- VALUES ('20302412-5', 'Lucas', 'Rojas', '2001-01-02', 'Calle Alameda', '123456789', 'luquitasrojas@gmail.com')
+
+-- CONSULTAS DROP --
+-- DROP TABLE IF EXISTS consultorio_atencion;
+
+-- CONSULTAS UPDATE --
+-- UPDATE consultorio_consultorio
+-- SET tipo = 'Teleconsulta'
+-- WHERE objectid = 1;

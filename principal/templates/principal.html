@@ -1,0 +1,57 @@
+{% extends "base.html" %} 
+{% load static %}
+
+    {% block title %} 
+        Página principal del Consultorio Digital 
+    {% endblock %} 
+
+    {% block extra_css %} 
+        <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/> 
+    {% endblock %}
+
+    {% block navbar %} 
+        <ul class="navbar-nav">
+            {% if user.is_authenticated %} 
+                <li class="nav-item active">
+                    <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'mis_horas' %}">Mis horas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'consultorio' %}">Reservar hora</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+                </li>
+                <li class="nav-item">
+                    <form id="frm_logout" method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <a class="nav-link" href="javascript:$('#frm_logout').submit();">Cerrar sesión
+                        </a>
+                    </form>
+                </li>
+            {% else %}
+                <li class="nav-item active">
+                    <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login' %}">Iniciar sesión</a>
+                </li>
+            {% endif %}
+        </ul>
+    {% endblock %}
+
+    {% block content %} 
+        {% if user.is_authenticated %} 
+            <h1 class="welcome-txt">¡Bienvenido, {{user.first_name}}!</h1> 
+        {% else %}
+            <h1 class="welcome-txt">¡Bienvenido! <a href="/login" style="color:white;">Inicia sesión</a> para continuar</h1> 
+        {% endif %}
+    {% endblock %}
+
+    {% block extrascripts %} 
+    {% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %} 
+{% load static %}
+
+    {% block title %} 
+        Consultorio Digital - Mis horas
+    {% endblock %} 
+
+    {% block navbar %} 
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'mis_horas' %}">Mis horas</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'consultorio' %}">Reservar hora</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+            </li>
+            <li class="nav-item">
+                <form id="frm_logout" method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <a class="nav-link" href="javascript:$('#frm_logout').submit();">Cerrar sesión
+                    </a>
+                </form>
+            </li>
+        </ul>
+    {% endblock %}
+
+    {% block extra_css %} 
+        <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/>
+        <link rel="stylesheet" href="{% static 'css/consultorio.css' %}" rel="stylesheet"/> 
+    {% endblock %}
+
+    {% block extrascripts %}<script type="text/JavaScript" src="{%  static 'js/consultorio.js' %}"></script>{% endblock %}
+
+    {% block content %}
+    <div class="container">
+        <div class="container">
+            <h1 class="lvl-select">Cancela tu cita</h1>
+            <p class="lvl-select">Tu cita solo puede ser cancelada con 24 horas de anticipación. Si no puedes asistir, por favor cancela tu cita para que otro paciente pueda ocupar tu hora.</p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="lvl-select" for="consultorio">Código de confirmación:</label>
+                    <input type="text" id="motivo" class="form-control" placeholder="Ingrese el código de confirmación que llegó a su correo"/>
+                </div>
+                <!-- Campos de ejemplo -->
+                <div class="form-group">
+                    <label class="lvl-select" for="motivo">Motivo por el que cancela:</label>
+                    <input type="text" id="motivo" class="form-control" placeholder="Ingrese el motivo de la consulta" />
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+    </div>
+    {% endblock %}
+    

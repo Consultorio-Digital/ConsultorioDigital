@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+    {% block extra_css %}
+        <link rel="stylesheet" href="{% static 'css/login.css' %}" rel="stylesheet"/> 
+    {% endblock %}
+
+    {% block title %}
+        Registro
+    {% endblock %}
+
+    {% block navbar %} 
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="#">Iniciar sesión</a>
+            </li>
+        </ul>
+    {% endblock %}
+
+    {% block content %}
+    <div class="login-page">
+        <div class="form">
+          <form method="POST" action="">
+            {% csrf_token %}
+            <h3 class="login-title">INICIA SESIÓN</h3>
+            <div class="input-group mb-3">
+              <input type="text" name="username" placeholder="Usuario..." class="form-control">
+            </div>
+            <div class="input-group mb-2">
+                <input type="password" name="password" placeholder="Contraseña..." class="form-control" >
+            </div>
+            <p class="message">¿No te has registrado? <a href="{% url 'registro' %}">Regístrate con tu Clave Única</a></p>
+            <p class="message">¿Olvidaste tu contraseña? <a href="{% url 'registro' %}">Recupérala con tu Clave Única</a></p>
+            <button type="submit"> ENVIAR </button>
+          </form>
+      {% for message in messages %}
+         <p class= "text-center">{{message}}</p>
+      {% endfor %}
+        </div>
+      </div>
+    {% endblock %}

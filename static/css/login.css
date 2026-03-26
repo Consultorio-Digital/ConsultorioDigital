@@ -1,0 +1,83 @@
+.login-page {
+    width: 500px;
+    padding: 10% 0 0;
+    margin: auto;
+  }
+
+  .form {
+    position: relative;
+    z-index: 1;
+    background: #FFFFFF;
+    max-width: 360px;
+    margin: 0 auto 300px;
+    padding: 45px;
+    text-align: center;
+    box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+  }
+  .form input {
+    font-family: "Roboto", sans-serif;
+    outline: 0;
+    background: #f2f2f2;
+    width: 100%;
+    border: 0;
+    margin: 0 0 15px;
+    padding: 15px;
+    box-sizing: border-box;
+    font-size: 14px;
+  }
+  .form button {
+    font-family: "Roboto", sans-serif;
+    text-transform: uppercase;
+    outline: 0;
+    background: #102a43;
+    width: 100%;
+    border: 0;
+    padding: 15px;
+    color: #FFFFFF;
+    font-size: 14px;
+    -webkit-transition: all 0.3 ease;
+    transition: all 0.3 ease;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .form button:hover,.form button:active,.form button:focus {
+    background: #2f5579;
+  }
+  .form .message {
+    margin: 15px 0 0;
+    color: #b3b3b3;
+    font-size: 12px;
+  }
+  .form .message a {
+    color: #102a43;
+
+  }
+
+  .login-title {
+    font-family: "Changa", sans-serif;
+    font-weight: bold;
+    margin-top: 0px;
+    margin-bottom: 24px;
+    color: #6C2A6A;
+  }
+
+  .container-fluid {
+    height: 100vh;
+    flex: 1; /* Permite que el contenedor llene todo el espacio disponible */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: 
+        linear-gradient(to bottom, rgba(1, 0, 0, 0.52), rgba(1, 0, 93, 0.73)), 
+        url("../img/enfermera-freepik-min.jpg"), 
+        no-repeat center center fixed;
+    
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+
+.navbar {
+    flex-shrink: 0; /* Asegura que el navbar no se reduzca */
+}
