@@ -1,48 +1,108 @@
 {% extends "base.html" %}
 {% load static %}
-{% load crispy_forms_tags %}
 
-    {% block extra_css %}
-        <link rel="stylesheet" href="{% static 'css/login.css' %}" rel="stylesheet"/> 
-    {% endblock %}
+{% block title %}Iniciar sesión — Consultorio Digital{% endblock %}
 
-    {% block title %}
-        Registro
-    {% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/login.css' %}"/>
+{% endblock %}
 
-    {% block navbar %} 
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
-            </li>
-            <li class="nav-item active">
-                <a class="nav-link" href="#">Iniciar sesión</a>
-            </li>
+{% block navbar %}
+  <ul class="navbar-nav me-auto gap-lg-1">
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'principal:principal' %}">Página principal</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'registro' %}">Crea tu cuenta</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white active" aria-current="page" href="#">Ingresa</a>
+    </li>
+  </ul>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center login-wrapper">
+  <div class="col-11 col-sm-9 col-md-7 col-lg-5 col-xl-4">
+
+    <div class="card border-0 shadow login-card">
+      <div class="card-body p-4 p-md-5">
+
+        {# ── Brand ── #}
+        <h4 class="text-center fw-bold mb-4">
+          Consultorio<span class="text-primary">Digital</span>
+        </h4>
+
+        {# ── Tabs ── #}
+        <ul class="nav nav-pills login-tabs mb-4" role="tablist">
+          <li class="nav-item flex-fill" role="presentation">
+            <button
+              class="nav-link active w-100"
+              id="tab-login"
+              data-bs-toggle="pill"
+              data-bs-target="#pane-login"
+              type="button"
+              role="tab"
+              aria-selected="true">
+              Iniciar sesión
+            </button>
+          </li>
+          <li class="nav-item flex-fill" role="presentation">
+            <a class="nav-link w-100 text-center" href="{% url 'registro' %}">
+              Registrarse
+            </a>
+          </li>
         </ul>
-    {% endblock %}
 
-    {% block content %}
-    <div class="login-page">
-        <div class="form">
-          <form method="POST" action="">
-            {% csrf_token %}
-            <h3 class="login-title">INICIA SESIÓN</h3>
-            <div class="input-group mb-3">
-              <input type="text" name="username" placeholder="Usuario..." class="form-control">
+        {# ── Formulario ── #}
+        <form method="POST" novalidate>
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="id_username">
+              RUT o Correo
+            </label>
+            <input
+              type="text"
+              class="form-control login-input"
+              id="id_username"
+              name="username"
+              placeholder="12.345.678-9 o correo@ejemplo.com"
+              autofocus
+            />
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold" for="id_password">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              class="form-control login-input"
+              id="id_password"
+              name="password"
+              placeholder="Ingrese su contraseña"
+            />
+          </div>
+
+          {# ── Mensajes de error ── #}
+          {% if form.errors %}
+            <div class="alert alert-danger py-2 small mb-3">
+              RUT/correo o contraseña incorrectos.
             </div>
-            <div class="input-group mb-2">
-                <input type="password" name="password" placeholder="Contraseña..." class="form-control" >
-            </div>
-            <p class="message">¿No te has registrado? <a href="{% url 'registro' %}">Regístrate con tu Clave Única</a></p>
-            <p class="message">¿Olvidaste tu contraseña? <a href="{% url 'registro' %}">Recupérala con tu Clave Única</a></p>
-            <button type="submit"> ENVIAR </button>
-          </form>
-      {% for message in messages %}
-         <p class= "text-center">{{message}}</p>
-      {% endfor %}
-        </div>
+          {% endif %}
+          {% for message in messages %}
+            <div class="alert alert-danger py-2 small mb-3">{{ message }}</div>
+          {% endfor %}
+
+          <button type="submit" class="btn btn-primary w-100 fw-bold login-btn">
+            Iniciar Sesión
+          </button>
+        </form>
+
       </div>
-    {% endblock %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

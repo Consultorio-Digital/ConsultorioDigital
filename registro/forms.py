@@ -1,8 +1,10 @@
+# registro/forms.py
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from consultorio.models import Usuario
 from django import forms
 from re import match
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field, Row, Column, HTML
 
 def validate_chilean_dni(rut: str | None) -> bool:
     """Validate a Chilean RUT.
@@ -69,19 +71,24 @@ def clean_username(self):
 
 
 class RegisterForm(UserCreationForm):
-    
+
+    TIPO_CHOICES = [
+        ('paciente',     'Paciente'),
+        ('profesional',  'Profesional'),
+    ]
+
     class Meta:
         model = User
         fields = [
-            "username", 
-            "email", 
+            "username",
+            "email",
             "first_name",
             "last_name",
             "address",
             "phone",
             "birthdate",
         ]
-    
+
     username        = forms.CharField(max_length=12)
     email           = forms.EmailField()
     first_name      = forms.CharField(max_length=80)
@@ -89,6 +96,8 @@ class RegisterForm(UserCreationForm):
     address         = forms.CharField(max_length=255, required=False)
     phone           = forms.CharField(max_length=15, required=False)
     birthdate       = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    tipo            = forms.ChoiceField(choices=TIPO_CHOICES, initial='paciente')
+    especialidad    = forms.CharField(max_length=255, required=False)
     usable_password = None
 
     def __init__(self, *args, **kwargs):
@@ -155,3 +164,41 @@ class RegisterForm(UserCreationForm):
         }
         
         self.error_messages["password_mismatch"] = "Las contraseñas no coinciden."
+        
+        self.fields['tipo'].label         = 'Tipo de cuenta'
+        self.fields['especialidad'].label  = 'Especialidad'
+        self.fields['especialidad'].help_text = 'Requerido si eres profesional'
+        self.fields['especialidad'].widget.attrs['placeholder'] = 'Ej: Medicina General, Odontología...'
+
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Field('tipo',       css_class='login-input'),
+            HTML('''
+                <div id="div-especialidad">
+            '''),
+            Field('especialidad', css_class='login-input'),
+            HTML('</div>'),
+            Field('email',      css_class='login-input'),
+            Row(
+                Column(Field('first_name', css_class='login-input'), css_class='col-md-6'),
+                Column(Field('last_name',  css_class='login-input'), css_class='col-md-6'),
+            ),
+            Field('username',   css_class='login-input'),
+            Field('address',    css_class='login-input'),
+            Field('phone',      css_class='login-input'),
+            Field('birthdate',  css_class='login-input'),
+            Field('password1',  css_class='login-input'),
+            HTML('<p class="text-muted small mb-2">Mínimo 8 caracteres</p>'),
+            Field('password2',  css_class='login-input'),
+        )
+
+    def clean_username(self):
+        # ── Mantén tu validación de RUT chileno existente ──
+        cleaned_data = self.cleaned_data
+        dni          = cleaned_data.get('username')
+
+        if not validate_chilean_dni(dni):
+            self.add_error('username', 'Ingrese un RUT válido')
+
+        return remove_points_and_hyphens(dni)

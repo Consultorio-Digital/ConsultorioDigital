@@ -1,44 +1,111 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="es">
-    <head>
-        <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.ico' %}"/>
-        <meta charset="UTF-16" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>
-            {% block title %}
-            Consultorio Digital
-            {% endblock %}
-        </title>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
-        <link rel="stylesheet" href="{% static 'css/navbar.css' %}" rel="stylesheet"/>
-        {% block extra_css %}{% endblock %}
-    </head>
-    <body>
-        <nav class="navbar navbar-light bg-light">
-            <a class="navbar-brand d-flex align-items-center" href="{% url 'principal:principal' %}">
-                <img src="{% static 'img/logo_gobierno_chile.svg' %}" width="30" height="30" alt="Logo" style="margin-right:20px"/>
-                Consultorio <span class="text-primary">Digital</span>
-            </a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                {% block navbar %}
-                {% endblock %}
-                {% if user.is_authenticated %}
-                    <span class="navbar-text">
-                        Bienvenido, {{user.first_name}}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.ico' %}" />
+
+    <title>{% block title %}Consultorio Digital{% endblock %}</title>
+
+    {# ── Bootstrap 5 ── #}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    {# ── Bootstrap Icons ── #}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    {# ── Estilos propios ── #}
+    <link rel="stylesheet" href="{% static 'css/navbar.css' %}" />
+
+    {% block extra_css %}{% endblock %}
+  </head>
+
+  <body style="background-color: #E3EEFE;">
+
+    <nav class="navbar navbar-expand-lg navbar-cd">
+      <div class="container-xl">
+
+        {# Brand #}
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white"
+          href="{% url 'principal:principal' %}">
+          <img
+            src="{% static 'img/logo_gobierno_chile.svg' %}"
+            width="32" height="32"
+            alt="Logo Gobierno de Chile"
+          />
+          ConsultorioDigital
+        </a>
+
+        {# Toggler mobile #}
+        <button
+          class="navbar-toggler border-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarMain"
+          aria-controls="navbarMain"
+          aria-expanded="false"
+          aria-label="Abrir menú">
+          <i class="bi bi-list fs-4 text-white"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+
+          {# Links inyectados por cada vista #}
+          {% block navbar %}{% endblock %}
+
+          {# Derecha — siempre visible #}
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+
+            <li class="nav-item">
+              <a class="nav-link text-white" href="#">Contacto</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="#">Ayuda</a>
+            </li>
+
+            {% if user.is_authenticated %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-white d-flex align-items-center gap-1"
+                  href="#" role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <i class="bi bi-person-circle fs-5"></i>
+                  <span>{{ user.first_name }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  <li>
+                    <span class="dropdown-item-text text-muted small">
+                      {{ user.get_full_name }}
                     </span>
-                {% endif %}
-            </div>
-        </nav>
-        <div class="container-fluid">
-            {% block content %}
-            {% endblock %}
+                  </li>
+                  <li><hr class="dropdown-divider my-1"></li>
+                  <li>
+                    <form method="post" action="{% url 'logout' %}">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item text-danger">
+                        <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
+                      </button>
+                    </form>
+                  </li>
+                </ul>
+              </li>
+            {% endif %}
+
+          </ul>
         </div>
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
-        {% block extrascripts %}{% endblock %}
-    </body>
+      </div>
+    </nav>
+
+    <main class="container-xl py-4">
+      {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+
+  </body>
 </html>

@@ -133,6 +133,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
 
+AUTHENTICATION_BACKENDS = [
+    "registro.backends.RutOrEmailBackend",
+]
+
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 

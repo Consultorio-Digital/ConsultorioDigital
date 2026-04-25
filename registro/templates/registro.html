@@ -2,33 +2,80 @@
 {% load static %}
 {% load crispy_forms_tags %}
 
-    {% block title %} 
-        Crea tu cuenta con tu RUT
-    {% endblock %}
+{% block title %}Crea tu cuenta — Consultorio Digital{% endblock %}
 
-    {% block navbar %} 
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
-            </li>
-            <li class="nav-item active">
-                <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'login' %}">Iniciar sesión</a>
-            </li>
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/login.css' %}"/>
+{% endblock %}
+
+{% block navbar %}
+  <ul class="navbar-nav me-auto gap-lg-1">
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'principal:principal' %}">Página principal</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white active" aria-current="page" href="#">Crea tu cuenta</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'login' %}">Ingresa</a>
+    </li>
+  </ul>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center login-wrapper">
+  <div class="col-11 col-sm-9 col-md-7 col-lg-5 col-xl-4">
+
+    <div class="card border-0 shadow login-card">
+      <div class="card-body p-4 p-md-5">
+
+        {# ── Brand ── #}
+        <h4 class="text-center fw-bold mb-4">
+          Consultorio<span class="text-primary">Digital</span>
+        </h4>
+
+        {# ── Tabs ── #}
+        <ul class="nav nav-pills login-tabs mb-4">
+          <li class="nav-item flex-fill">
+            <a class="nav-link w-100 text-center" href="{% url 'login' %}">
+              Iniciar sesión
+            </a>
+          </li>
+          <li class="nav-item flex-fill">
+            <a class="nav-link active w-100 text-center" href="#">
+              Registrarse
+            </a>
+          </li>
         </ul>
-    {% endblock %}
 
-    {% block extra_css %} 
-        <link rel="stylesheet" href="{% static 'css/form.css' %}" rel="stylesheet"/> 
-        <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/> 
-    {% endblock %}
-
-    {% block content %} 
-        <form method="POST" class="form-group">
-            {% csrf_token %}
-            {{form|crispy}}
-            <button type="submit" class="btn btn-primary">Registrarse</button>
+        {# ── Formulario Crispy ── #}
+        <form method="POST" novalidate>
+          {% csrf_token %}
+          {{ form|crispy }}
+          <button type="submit" class="btn btn-primary w-100 fw-bold login-btn mt-2">
+            Registrarse
+          </button>
         </form>
-    {% endblock %}
+
+        <p class="text-center small mt-3 mb-0">
+          ¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión</a>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const tipo = document.getElementById('id_tipo');
+  const divEsp = document.getElementById('div-especialidad');
+  function toggleEspecialidad() {
+    divEsp.style.display = tipo.value === 'profesional' ? '' : 'none';
+  }
+  toggleEspecialidad();
+  tipo.addEventListener('change', toggleEspecialidad);
+</script>
+{% endblock %}
