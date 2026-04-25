@@ -1,57 +1,255 @@
-{% extends "base.html" %} 
+{% extends "base.html" %}
 {% load static %}
 
-    {% block title %} 
-        Página principal del Consultorio Digital 
-    {% endblock %} 
+{% block title %}Inicio — Consultorio Digital{% endblock %}
 
-    {% block extra_css %} 
-        <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/> 
-    {% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/principal.css' %}"/>
+{% endblock %}
 
-    {% block navbar %} 
-        <ul class="navbar-nav">
-            {% if user.is_authenticated %} 
-                <li class="nav-item active">
-                    <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'mis_horas' %}">Mis horas</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'consultorio' %}">Reservar hora</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
-                </li>
-                <li class="nav-item">
-                    <form id="frm_logout" method="post" action="{% url 'logout' %}">
-                        {% csrf_token %}
-                        <a class="nav-link" href="javascript:$('#frm_logout').submit();">Cerrar sesión
-                        </a>
-                    </form>
-                </li>
-            {% else %}
-                <li class="nav-item active">
-                    <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'login' %}">Iniciar sesión</a>
-                </li>
-            {% endif %}
-        </ul>
-    {% endblock %}
+{% block navbar %}
+  <ul class="navbar-nav me-auto gap-lg-1">
+    {% if user.is_authenticated %}
+      <li class="nav-item">
+        <a class="nav-link text-white active" href="{% url 'principal:principal' %}">Inicio</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'mis_horas' %}">Mis horas</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'consultorio' %}">Reservar hora</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+      </li>
+    {% else %}
+      <li class="nav-item">
+        <a class="nav-link text-white active" href="{% url 'principal:principal' %}">Inicio</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'registro' %}">Crea tu cuenta</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'login' %}">Ingresa</a>
+      </li>
+    {% endif %}
+  </ul>
+{% endblock %}
 
-    {% block content %} 
-        {% if user.is_authenticated %} 
-            <h1 class="welcome-txt">¡Bienvenido, {{user.first_name}}!</h1> 
+{% block content %}
+
+  {# ── Header de bienvenida ── #}
+  {% if user.is_authenticated %}
+    <div class="mb-4 text-center">
+      <h1 class="fw-light mb-1">¡Bienvenido, {{ user.first_name }}!</h1>
+      <p class="text-muted fs-5 fw-light">Aquí puedes ver y gestionar tus citas médicas</p>
+    </div>
+
+    {% if confirmacion %}
+    <div class="alert {% if confirmacion.ya_tomado %}alert-warning{% else %}alert-success{% endif %} alert-dismissible fade show d-flex gap-3 align-items-start mb-4" role="alert">
+      <i class="bi {% if confirmacion.ya_tomado %}bi-exclamation-triangle-fill text-warning{% else %}bi-check-circle-fill text-success{% endif %} fs-4 mt-1"></i>
+      <div>
+        {% if confirmacion.ya_tomado %}
+          <strong>El horario ya fue tomado.</strong><br>
+          <span class="small">Por favor intenta reservar otro horario disponible.</span>
         {% else %}
-            <h1 class="welcome-txt">¡Bienvenido! <a href="/login" style="color:white;">Inicia sesión</a> para continuar</h1> 
+          <strong>¡Cita agendada con éxito!</strong><br>
+          <span class="small">
+            <i class="bi bi-hospital me-1"></i>{{ confirmacion.consultorio }}<br>
+            <i class="bi bi-person-badge me-1"></i>{{ confirmacion.doctor }}<br>
+            <i class="bi bi-calendar3 me-1"></i>{{ confirmacion.fecha }}
+            &nbsp;<i class="bi bi-clock me-1"></i>{{ confirmacion.hora }}
+          </span>
         {% endif %}
-    {% endblock %}
+      </div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+    {% endif %}
 
-    {% block extrascripts %} 
-    {% endblock %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+      <div class="card-body p-4">
+
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h5 class="fw-light mb-1">
+              <span class="badge bg-primary rounded-circle me-2 d-inline-flex align-items-center justify-content-center" style="width:22px;height:22px;">
+                <i class="bi bi-calendar2 small"></i>
+              </span>
+              Próximas citas
+            </h5>
+            <p class="text-muted small mb-0">
+              Citas activas con fecha pendiente
+            </p>
+          </div>
+          <a href="{% url 'consultorio' %}" class="btn btn-primary btn-nueva-cita">
+            + Nueva Cita
+          </a>
+        </div>
+
+        {# Tabla de citas #}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="fw-bold">Consultorio</th>
+                <th class="fw-bold">Doctor</th>
+                <th class="fw-bold">Fecha</th>
+                <th class="fw-bold">Hora</th>
+                <th class="fw-bold">Motivo</th>
+                <th class="fw-bold">Ubicación</th>
+                <th class="fw-bold">Estado</th>
+                <th class="fw-bold">Seguimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if reservas %}
+                {% for reserva in reservas %}
+                  <tr>
+                    <td>
+                      <i class="bi bi-building me-1 text-muted"></i>
+                      {{ reserva.consultorio.nombre }}
+                    </td>
+                    <td>
+                      {% if reserva.profesional %}
+                        <i class="bi bi-person-badge me-1 text-muted"></i>
+                        Dr/a. {{ reserva.profesional.usuario.nombre }} {{ reserva.profesional.usuario.apellido }}
+                        <br>
+                        <small class="text-muted">{{ reserva.profesional.especialidad }}</small>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <i class="bi bi-calendar3 me-1 text-muted"></i>
+                      {{ reserva.fecha_reserva|date:"d-m-Y" }}
+                    </td>
+                    <td>
+                      <i class="bi bi-clock me-1 text-muted"></i>
+                      {{ reserva.fecha_reserva|date:"H:i" }}
+                    </td>
+                    <td>{{ reserva.motivo }}</td>
+                    <td>
+                      <a href="https://www.google.com/maps?q={{ reserva.consultorio.latitud }},{{ reserva.consultorio.longitud }}"
+                         target="_blank"
+                         rel="noopener"
+                         class="text-primary text-decoration-none">
+                        {{ reserva.consultorio.direccion }}
+                      </a>
+                    </td>
+                    <td>
+                      {% if reserva.estado == "confirmada" %}
+                        <span class="badge badge-estado bg-confirmado">Confirmada</span>
+                      {% elif reserva.estado == "pendiente" %}
+                        <span class="badge badge-estado bg-pendiente">Pendiente</span>
+                      {% elif reserva.estado == "completada" %}
+                        <span class="badge badge-estado bg-completada">Completada</span>
+                      {% elif reserva.estado == "seguimiento" %}
+                        <span class="badge badge-estado bg-seguimiento">Seguimiento</span>
+                      {% elif reserva.estado == "cancelada" %}
+                        <span class="badge badge-estado bg-secondary">Cancelada</span>
+                      {% elif reserva.estado == "no_asistio" %}
+                        <span class="badge badge-estado bg-no-asistio">No asistió</span>
+                      {% else %}
+                        <span class="badge badge-estado bg-secondary">{{ reserva.estado }}</span>
+                      {% endif %}
+                      {% if reserva.notas_doctor %}
+                        <div class="small text-muted mt-1 fst-italic">
+                          <i class="bi bi-info-circle me-1"></i>{{ reserva.notas_doctor }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if reserva.fecha_seguimiento %}
+                        <i class="bi bi-calendar-check me-1 text-muted"></i>
+                        {{ reserva.fecha_seguimiento|date:"d-m-Y" }}
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="8" class="text-center text-muted py-5">
+                    <i class="bi bi-calendar-check fs-2 d-block mb-3 text-primary opacity-50"></i>
+                    <div class="fw-semibold mb-1">No tienes citas próximas</div>
+                    <div class="small mb-3">Agenda una cita con tu médico cuando la necesites</div>
+                    <a href="{% url 'consultorio' %}" class="btn btn-primary btn-sm">+ Reservar cita</a>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="row g-4">
+
+      {# — Información importante — #}
+      <div class="col-12 col-md-6">
+        <div class="card border-0 shadow-sm rounded-3 h-100">
+          <div class="card-body p-4">
+            <h5 class="fw-semibold mb-3">Información importante</h5>
+            <ul class="list-unstyled mb-0 info-list">
+              <li>
+                <i class="bi bi-clock-history text-primary me-2"></i>
+                Llega 15 minutos antes de tu cita
+              </li>
+              <li>
+                <i class="bi bi-person-vcard text-primary me-2"></i>
+                Trae tu carnet de identidad y documentos médicos
+              </li>
+              <li>
+                <i class="bi bi-calendar-x text-primary me-2"></i>
+                Si necesitas cancelar, hazlo con 24 horas de anticipación
+              </li>
+              <li>
+                <i class="bi bi-check-circle text-primary me-2"></i>
+                El plazo máximo para una confirmación de cita es de 24 horas
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {# — Contacto de emergencia — #}
+      <div class="col-12 col-md-6">
+        <div class="card border-0 shadow-sm rounded-3 h-100">
+          <div class="card-body p-4">
+            <h5 class="fw-semibold mb-3">
+              🚨 Contacto de emergencia
+            </h5>
+            <ul class="list-unstyled mb-0 info-list">
+              <li>
+                <i class="bi bi-telephone text-dark me-2"></i>
+                Teléfono: +56 2 2345 6789
+              </li>
+              <li>
+                <i class="bi bi-envelope text-dark me-2"></i>
+                Email:
+                <a href="mailto:contacto@consultoriodigital.cl" class="text-primary">
+                  contacto@consultoriodigital.cl
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>{# /row #}
+
+  {% else %}
+    {# ── Usuario no autenticado ── #}
+    <div class="text-center py-5">
+      <h1 class="fw-light mb-3">¡Bienvenido a ConsultorioDigital!</h1>
+      <p class="text-muted fs-5 mb-4">
+        Gestiona tus citas médicas de forma simple y rápida
+      </p>
+      <a href="{% url 'login' %}" class="btn btn-primary me-2">Iniciar sesión</a>
+      <a href="{% url 'registro' %}" class="btn btn-outline-primary">Crear cuenta</a>
+    </div>
+  {% endif %}
+
+{% endblock %}

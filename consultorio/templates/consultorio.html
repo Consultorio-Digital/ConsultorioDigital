@@ -1,123 +1,287 @@
-{% extends "base.html" %} 
+{% extends "base.html" %}
 {% load static %}
 
-    {% block title %} 
-        Consultorio Digital
-    {% endblock %} 
+{% block title %}Reservar hora — Consultorio Digital{% endblock %}
 
-    {% block navbar %} 
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{% url 'mis_horas' %}">Mis horas</a>
-            </li>
-            <li class="nav-item active">
-                <a class="nav-link" href="{% url 'consultorio' %}">Reservar hora</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
-            </li>
-            <li class="nav-item">
-                <form id="frm_logout" method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <a class="nav-link" href="javascript:$('#frm_logout').submit();">Cerrar sesión
-                    </a>
-                </form>
-            </li>
-        </ul>
-    {% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/consultorio.css' %}"/>
+{% endblock %}
 
-    {% block extra_css %} 
-        <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/>
-        <link rel="stylesheet" href="{% static 'css/consultorio.css' %}" rel="stylesheet"/> 
-    {% endblock %}
+{% block navbar %}
+  <ul class="navbar-nav me-auto gap-lg-1">
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'principal:principal' %}">Inicio</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'mis_horas' %}">Mis horas</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white active" href="{% url 'consultorio' %}">Reservar hora</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+    </li>
+  </ul>
+{% endblock %}
 
-    {% block content %}
-    <div class="container">
-        <h1 class="lvl-select">Agenda tu cita</h1>
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="lvl-select" for="region">Región:</label>
-                <select id="region" class="form-control">
-                    <option value="">Seleccione una región</option>
-                    {% for region in regiones %}
-                        <option value="{{ region.c_reg }}">{{ region.nom_reg }}</option>
-                    {% endfor %}
-                </select>
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-10 col-lg-7 col-xl-6">
+
+    <div class="card border-0 shadow-sm reserva-card">
+      <div class="card-body p-4 p-md-5">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <i class="bi bi-calendar2-plus fs-3 text-dark"></i>
+          <div>
+            <h4 class="fw-bold mb-0">Agenda tu cita</h4>
+            <p class="text-muted small mb-0">Selecciona ubicación, doctor y horario disponible</p>
+          </div>
+        </div>
+
+        <form method="post" id="frm-reserva">
+          {% csrf_token %}
+
+          {# ── Región ── #}
+          <div class="mb-3">
+            <label class="form-label reserva-label" for="region">Región</label>
+            <select id="region" name="region" class="form-select reserva-input">
+              <option value="">Seleccionar región</option>
+              {% for region in regiones %}
+                <option value="{{ region.c_reg }}">{{ region.nom_reg }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {# ── Comuna ── #}
+          <div class="mb-3">
+            <label class="form-label reserva-label" for="comuna">Comuna</label>
+            <select id="comuna" name="comuna" class="form-select reserva-input" disabled>
+              <option value="">Primero selecciona una región</option>
+            </select>
+          </div>
+
+          {# ── Consultorio ── #}
+          <div class="mb-3">
+            <label class="form-label reserva-label" for="consultorio">Consultorio</label>
+            <select id="consultorio" name="consultorio" class="form-select reserva-input" disabled>
+              <option value="">Primero selecciona una comuna</option>
+            </select>
+          </div>
+
+          {# ── Doctor ── #}
+          <div class="mb-3">
+            <label class="form-label reserva-label" for="doctor-select">Doctor</label>
+            <select id="doctor-select" name="profesional_id" class="form-select reserva-input" disabled>
+              <option value="">Primero selecciona un consultorio</option>
+            </select>
+            <div id="sin-doctores" class="form-text text-warning d-none">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              No hay doctores con disponibilidad en este consultorio aún.
             </div>
-            <div class="form-group">
-                <label class="lvl-select" for="comuna">Comuna:</label>
-                <select id="comuna" class="form-control" disabled>
-                    <option value="">Seleccione una comuna</option>
-                </select>
+          </div>
+
+          {# ── Fecha disponible ── #}
+          <div class="mb-3">
+            <label class="form-label reserva-label" for="fecha-select">Fecha disponible</label>
+            <select id="fecha-select" class="form-select reserva-input" disabled>
+              <option value="">Primero selecciona un doctor</option>
+            </select>
+            <div id="sin-fechas" class="form-text text-warning d-none">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Este doctor no tiene fechas disponibles próximas.
             </div>
-            <div class="form-group">
-                <label class="lvl-select" for="consultorio">Consultorio:</label>
-                <select id="consultorio" class="form-control" disabled>
-                    <option value="">Seleccione un consultorio</option>
-                </select>
+          </div>
+
+          {# ── Horario ── #}
+          <div class="mb-3">
+            <label class="form-label reserva-label" for="slot-select">Horario</label>
+            <select id="slot-select" name="slot" class="form-select reserva-input" disabled>
+              <option value="">Primero selecciona una fecha</option>
+            </select>
+            <div id="sin-slots" class="form-text text-warning d-none">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              No quedan horarios disponibles para esta fecha.
             </div>
-            <!-- Campos de ejemplo -->
-            <div class="form-group">
-                <label class="lvl-select" for="motivo">Motivo de Consulta:</label>
-                <input type="text" id="motivo" class="form-control" placeholder="Ingrese el motivo de la consulta" />
-            </div>
-            <div class="form-group">
-                <label class="lvl-select" for="fecha">Fecha de Consulta:</label>
-                <input type="date" id="fecha" class="form-control" />
-            </div>
-            <button type="submit" class="btn btn-primary">Enviar</button>
+          </div>
+
+          {# ── Motivo ── #}
+          <div class="mb-4">
+            <label class="form-label reserva-label" for="motivo">Motivo de consulta</label>
+            <textarea
+              id="motivo"
+              name="motivo"
+              class="form-control reserva-input"
+              rows="3"
+              placeholder="Describe brevemente el motivo de tu consulta"
+            ></textarea>
+          </div>
+
+          <button type="submit" id="btn-reservar" class="btn btn-primary w-100 reserva-btn" disabled>
+            Confirmar reserva
+          </button>
+
         </form>
-    </div>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const regionSelect = document.getElementById('region');
-        const comunaSelect = document.getElementById('comuna');
-        const consultorioSelect = document.getElementById('consultorio');
-    
-        regionSelect.addEventListener('change', function() {
-            const regionId = parseInt(this.value);
-            if (regionId) {
-                fetch(`/consultorio/obtener_comunas/${regionId}/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        comunaSelect.innerHTML = '<option value="">Seleccione una comuna</option>';
-                        data.forEach(comuna => {
-                            comunaSelect.innerHTML += `<option value="${comuna.c_com}">${comuna.nom_com}</option>`;
-                        });
-                        comunaSelect.disabled = false;
-                    });
-            } else {
-                comunaSelect.innerHTML = '<option value="">Seleccione una comuna</option>';
-                comunaSelect.disabled = true;
-                consultorioSelect.innerHTML = '<option value="">Seleccione un consultorio</option>';
-                consultorioSelect.disabled = true;
-            }
-        });
-    
-        comunaSelect.addEventListener('change', function() {
-            const comunaId = this.value;
-            if (comunaId) {
-                fetch(`/consultorio/obtener_consultorios/${comunaId}/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        consultorioSelect.innerHTML = '<option value="">Seleccione un consultorio</option>';
-                        data.forEach(consultorio => {
-                            consultorioSelect.innerHTML += `<option value="${consultorio.objectid}">${consultorio.nombre}</option>`;
-                        });
-                        consultorioSelect.disabled = false;
-                    });
-            } else {
-                consultorioSelect.innerHTML = '<option value="">Seleccione un consultorio</option>';
-                consultorioSelect.disabled = true;
-            }
-        });
-    });
 
-    </script>
-    {% endblock %}
-    
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const regionSelect    = document.getElementById('region');
+  const comunaSelect    = document.getElementById('comuna');
+  const consultorioSel  = document.getElementById('consultorio');
+  const doctorSel       = document.getElementById('doctor-select');
+  const fechaSel        = document.getElementById('fecha-select');
+  const slotSel         = document.getElementById('slot-select');
+  const btnReservar     = document.getElementById('btn-reservar');
+  const sinDoctores     = document.getElementById('sin-doctores');
+  const sinFechas       = document.getElementById('sin-fechas');
+  const sinSlots        = document.getElementById('sin-slots');
+
+  function reset(select, msg) {
+    select.innerHTML = `<option value="">${msg}</option>`;
+    select.disabled  = true;
+  }
+
+  function checkSubmit() {
+    const ok = consultorioSel.value && doctorSel.value &&
+               fechaSel.value && slotSel.value;
+    btnReservar.disabled = !ok;
+  }
+
+  // ── Región → Comuna ──
+  regionSelect.addEventListener('change', function () {
+    reset(comunaSelect,    'Seleccionar comuna');
+    reset(consultorioSel,  'Primero selecciona una comuna');
+    reset(doctorSel,       'Primero selecciona un consultorio');
+    reset(fechaSel,        'Primero selecciona un doctor');
+    reset(slotSel,         'Primero selecciona una fecha');
+    sinDoctores.classList.add('d-none');
+    sinFechas.classList.add('d-none');
+    sinSlots.classList.add('d-none');
+    checkSubmit();
+
+    if (!this.value) return;
+    fetch(`/consultorio/obtener_comunas/${parseInt(this.value)}/`)
+      .then(r => r.json())
+      .then(data => {
+        comunaSelect.innerHTML = '<option value="">Seleccionar comuna</option>';
+        data.forEach(c => {
+          comunaSelect.innerHTML += `<option value="${c.c_com}">${c.nom_com}</option>`;
+        });
+        comunaSelect.disabled = false;
+      });
+  });
+
+  // ── Comuna → Consultorio ──
+  comunaSelect.addEventListener('change', function () {
+    reset(consultorioSel, 'Seleccionar consultorio');
+    reset(doctorSel,      'Primero selecciona un consultorio');
+    reset(fechaSel,       'Primero selecciona un doctor');
+    reset(slotSel,        'Primero selecciona una fecha');
+    sinDoctores.classList.add('d-none');
+    sinFechas.classList.add('d-none');
+    sinSlots.classList.add('d-none');
+    checkSubmit();
+
+    if (!this.value) return;
+    fetch(`/consultorio/obtener_consultorios/${this.value}/`)
+      .then(r => r.json())
+      .then(data => {
+        consultorioSel.innerHTML = '<option value="">Seleccionar consultorio</option>';
+        data.forEach(c => {
+          consultorioSel.innerHTML += `<option value="${c.objectid}">${c.nombre}</option>`;
+        });
+        consultorioSel.disabled = false;
+      });
+  });
+
+  // ── Consultorio → Doctor ──
+  consultorioSel.addEventListener('change', function () {
+    reset(doctorSel,  'Cargando doctores...');
+    reset(fechaSel,   'Primero selecciona un doctor');
+    reset(slotSel,    'Primero selecciona una fecha');
+    sinDoctores.classList.add('d-none');
+    sinFechas.classList.add('d-none');
+    sinSlots.classList.add('d-none');
+    checkSubmit();
+
+    if (!this.value) return;
+    fetch(`/consultorio/obtener_doctores/?consultorio_id=${this.value}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.length === 0) {
+          reset(doctorSel, 'Sin doctores disponibles');
+          sinDoctores.classList.remove('d-none');
+        } else {
+          doctorSel.innerHTML = '<option value="">Seleccionar doctor</option>';
+          data.forEach(d => {
+            doctorSel.innerHTML +=
+              `<option value="${d.id}">Dr/a. ${d.nombre} — ${d.especialidad}</option>`;
+          });
+          doctorSel.disabled = false;
+        }
+      });
+  });
+
+  // ── Doctor → Fechas ──
+  doctorSel.addEventListener('change', function () {
+    reset(fechaSel, 'Cargando fechas...');
+    reset(slotSel,  'Primero selecciona una fecha');
+    sinFechas.classList.add('d-none');
+    sinSlots.classList.add('d-none');
+    checkSubmit();
+
+    if (!this.value) return;
+    fetch(`/consultorio/obtener_fechas/?profesional_id=${this.value}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.length === 0) {
+          reset(fechaSel, 'Sin fechas disponibles');
+          sinFechas.classList.remove('d-none');
+        } else {
+          fechaSel.innerHTML = '<option value="">Seleccionar fecha</option>';
+          data.forEach(f => {
+            // Formatear de YYYY-MM-DD a DD/MM/YYYY para mostrar
+            const [y, m, d] = f.split('-');
+            fechaSel.innerHTML += `<option value="${f}">${d}/${m}/${y}</option>`;
+          });
+          fechaSel.disabled = false;
+        }
+      });
+  });
+
+  // ── Fecha → Slots ──
+  fechaSel.addEventListener('change', function () {
+    reset(slotSel, 'Cargando horarios...');
+    sinSlots.classList.add('d-none');
+    checkSubmit();
+
+    if (!this.value) return;
+    const pid = doctorSel.value;
+    fetch(`/consultorio/obtener_slots/?profesional_id=${pid}&fecha=${this.value}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.length === 0) {
+          reset(slotSel, 'Sin horarios disponibles');
+          sinSlots.classList.remove('d-none');
+        } else {
+          slotSel.innerHTML = '<option value="">Seleccionar horario</option>';
+          data.forEach(s => {
+            slotSel.innerHTML += `<option value="${s.value}">${s.label}</option>`;
+          });
+          slotSel.disabled = false;
+        }
+      });
+  });
+
+  slotSel.addEventListener('change', checkSubmit);
+});
+</script>
+{% endblock %}

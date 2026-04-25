@@ -1,85 +1,176 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}
-    Consultorio Digital - Mis horas
+{% block title %}Historial de citas — Consultorio Digital{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/principal.css' %}"/>
 {% endblock %}
 
 {% block navbar %}
-    <ul class="navbar-nav">
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'principal:principal' %}">Página principal</a>
-        </li>
-        <li class="nav-item active">
-            <a class="nav-link active" href="{% url 'mis_horas' %}">Mis horas</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'consultorio' %}">Reservar hora</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
-        </li>
-        <li class="nav-item">
-            <form id="frm_logout" method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <a class="nav-link" href="javascript:$('#frm_logout').submit();">Cerrar sesión</a>
-            </form>
-        </li>
-    </ul>
-{% endblock %}
-
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/principal.css' %}" rel="stylesheet"/>
-{% endblock %}
-
-{% block extrascripts %}
-    <script type="text/JavaScript" src="{% static 'js/consultorio.js' %}"></script>
+  <ul class="navbar-nav me-auto gap-lg-1">
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'principal:principal' %}">Inicio</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white active" href="{% url 'mis_horas' %}">Mis horas</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'consultorio' %}">Reservar hora</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-white" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+    </li>
+  </ul>
 {% endblock %}
 
 {% block content %}
-    <div class="container mt-5">
-        <h2 class="mb-4" style="color:white;">Mis horas agendadas ⏰</h2>
-        <table class="table table-dark" style="background-color:rgba(0, 0, 0, 0);">
-            <thead class="thead">
-                <tr>
-                    <th>Nombre del Consultorio</th>
-                    <th>Hora Agendada</th>
-                    <th>Razón de Agendar</th>
-                    <th>Estado</th>
-                </tr>
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-4">
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 class="fw-light mb-0">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Historial de citas
+          </h4>
+          <p class="text-muted small mb-0 mt-1">Citas pasadas, completadas y canceladas</p>
+        </div>
+        {% if page_obj.paginator.count > 0 %}
+          <span class="badge bg-secondary rounded-pill px-3 py-2">
+            {{ page_obj.paginator.count }} registro{% if page_obj.paginator.count != 1 %}s{% endif %}
+          </span>
+        {% endif %}
+      </div>
+
+      {% if page_obj.object_list %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="fw-bold">Consultorio</th>
+                <th class="fw-bold">Doctor</th>
+                <th class="fw-bold">Fecha</th>
+                <th class="fw-bold">Hora</th>
+                <th class="fw-bold">Motivo</th>
+                <th class="fw-bold">Estado</th>
+                <th class="fw-bold">Seguimiento</th>
+              </tr>
             </thead>
-            <tbody class="table-striped table-hover">
+            <tbody>
+              {% for reserva in page_obj %}
                 <tr>
-                    <td>Centro de Salud Familiar</td>
-                    <td>2024-07-15 09:00</td>
-                    <td>Consulta Dental</td>
-                    <td>Confirmada ✅</td>
+                  <td>
+                    <i class="bi bi-building me-1 text-muted"></i>
+                    {{ reserva.consultorio.nombre }}
+                  </td>
+                  <td>
+                    {% if reserva.profesional %}
+                      <i class="bi bi-person-badge me-1 text-muted"></i>
+                      Dr/a. {{ reserva.profesional.usuario.nombre }} {{ reserva.profesional.usuario.apellido }}
+                      <br>
+                      <small class="text-muted">{{ reserva.profesional.especialidad }}</small>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <i class="bi bi-calendar3 me-1 text-muted"></i>
+                    {{ reserva.fecha_reserva|date:"d-m-Y" }}
+                  </td>
+                  <td>
+                    <i class="bi bi-clock me-1 text-muted"></i>
+                    {{ reserva.fecha_reserva|date:"H:i" }}
+                  </td>
+                  <td>{{ reserva.motivo }}</td>
+                  <td>
+                    {% if reserva.estado == "confirmada" %}
+                      <span class="badge badge-estado bg-confirmado">Confirmada</span>
+                    {% elif reserva.estado == "pendiente" %}
+                      <span class="badge badge-estado bg-pendiente">Pendiente</span>
+                    {% elif reserva.estado == "completada" %}
+                      <span class="badge badge-estado bg-completada">Completada</span>
+                    {% elif reserva.estado == "seguimiento" %}
+                      <span class="badge badge-estado bg-seguimiento">Seguimiento</span>
+                    {% elif reserva.estado == "cancelada" %}
+                      <span class="badge badge-estado bg-secondary">Cancelada</span>
+                    {% elif reserva.estado == "no_asistio" %}
+                      <span class="badge badge-estado bg-no-asistio">No asistió</span>
+                    {% else %}
+                      <span class="badge badge-estado bg-secondary">{{ reserva.estado }}</span>
+                    {% endif %}
+                    {% if reserva.notas_doctor %}
+                      <div class="small text-muted mt-1 fst-italic">
+                        <i class="bi bi-info-circle me-1"></i>{{ reserva.notas_doctor }}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if reserva.fecha_seguimiento %}
+                      <i class="bi bi-calendar-check me-1 text-muted"></i>
+                      {{ reserva.fecha_seguimiento|date:"d-m-Y" }}
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
                 </tr>
-                <tr>
-                    <td>Centro de Salud Familiar</td>
-                    <td>2024-07-16 11:00</td>
-                    <td>Control Médico</td>
-                    <td>Confirmada ✅</td>
-                </tr>
-                <tr>
-                    <td>Centro de Salud Familiar</td>
-                    <td>2024-07-17 14:00</td>
-                    <td>Consulta General</td>
-                    <td>Confirmada ✅</td>
-                </tr>
-                <tr>
-                    <td>Centro de Salud Familiar</td>
-                    <td>2024-07-18 10:00</td>
-                    <td>Consulta General</td>
-                    <td>En espera de profesional</td>
-                </tr>
-                <tr>
-                    <td>Centro de Salud Familiar</td>
-                    <td>2024-07-19 08:30</td>
-                    <td>Consulta General</td>
-                    <td>En espera de profesional</td>
-                </tr>
+              {% endfor %}
             </tbody>
-        </table>
+          </table>
+        </div>
+
+        {# Paginación #}
+        {% if page_obj.has_other_pages %}
+          <nav class="mt-4 d-flex justify-content-center" aria-label="Paginación">
+            <ul class="pagination pagination-sm mb-0">
+
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                    <i class="bi bi-chevron-left"></i>
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                </li>
+              {% endif %}
+
+              {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                </li>
+              {% endif %}
+
+            </ul>
+          </nav>
+        {% endif %}
+
+      {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-clock-history fs-2 d-block mb-3 opacity-50"></i>
+          <div class="fw-semibold mb-1">Sin historial aún</div>
+          <div class="small">Las citas completadas, pasadas y canceladas aparecerán aquí</div>
+        </div>
+      {% endif %}
+
     </div>
+  </div>
 {% endblock %}
