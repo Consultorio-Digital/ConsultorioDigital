@@ -1,0 +1,79 @@
+{% if es_pasada and r.estado == 'pendiente' or es_pasada and r.estado == 'confirmada' %}
+  {# Cita cuya hora ya pasó: solo completar retroactivo o marcar no asistió #}
+  <button type="button" class="btn btn-completar btn-sm me-1"
+    data-bs-toggle="modal" data-bs-target="#modal-completar"
+    data-reserva-id="{{ r.id }}"
+    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}">
+    <i class="bi bi-clipboard2-check me-1"></i>Completar
+  </button>
+  <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="no_asistio">
+    <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <button type="submit" class="btn btn-no-asistio btn-sm">
+      <i class="bi bi-person-x me-1"></i>No asistió
+    </button>
+  </form>
+
+{% elif r.estado == 'pendiente' %}
+  <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="confirmar">
+    <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <button type="submit" class="btn btn-completar btn-sm">
+      <i class="bi bi-check-lg me-1"></i>Confirmar
+    </button>
+  </form>
+
+{% elif r.estado == 'confirmada' %}
+  {% if not es_futura %}
+  <button type="button" class="btn btn-completar btn-sm"
+    data-bs-toggle="modal" data-bs-target="#modal-completar"
+    data-reserva-id="{{ r.id }}"
+    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}">
+    <i class="bi bi-clipboard2-check me-1"></i>Completar
+  </button>
+  {% else %}
+  <span class="text-muted small">Confirmada</span>
+  {% endif %}
+
+{% elif r.estado == 'completada' %}
+  <button type="button" class="btn btn-seguimiento btn-sm me-1"
+    data-bs-toggle="modal" data-bs-target="#modal-seguimiento"
+    data-reserva-id="{{ r.id }}"
+    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
+    data-notas="{{ r.notas_doctor|default:'' }}">
+    <i class="bi bi-arrow-repeat me-1"></i>Seguimiento
+  </button>
+  <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reabrir">
+    <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <button type="submit" class="btn btn-reabrir btn-sm">
+      <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
+    </button>
+  </form>
+
+{% elif r.estado == 'seguimiento' %}
+  <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reabrir">
+    <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <button type="submit" class="btn btn-reabrir btn-sm">
+      <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
+    </button>
+  </form>
+
+{% elif r.estado == 'no_asistio' %}
+  <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reabrir">
+    <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <button type="submit" class="btn btn-reabrir btn-sm">
+      <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
+    </button>
+  </form>
+
+{% else %}
+  <span class="text-muted small">—</span>
+{% endif %}

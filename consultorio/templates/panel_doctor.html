@@ -1,0 +1,642 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel del Doctor — Consultorio Digital{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/panel_doctor.css' %}"/>
+{% endblock %}
+
+{% block navbar %}
+  <ul class="navbar-nav me-auto gap-lg-1">
+    <li class="nav-item">
+      <a class="nav-link text-white active" href="{% url 'panel_doctor' %}">Mi panel</a>
+    </li>
+  </ul>
+{% endblock %}
+
+{% block content %}
+
+  <div class="mb-4 text-center">
+    <h1 class="fw-light mb-1">¡Bienvenido, Dr. {{ user.first_name }} {{ user.last_name }}!</h1>
+    <p class="text-muted fs-5 fw-light">
+      Panel de gestión médica — {{ fecha_hoy|date:"l, d \d\e F \d\e Y" }}
+    </p>
+    {% if profesional.consultorio %}
+      <span class="badge bg-primary rounded-pill px-3 py-2">
+        <i class="bi bi-building me-1"></i>{{ profesional.consultorio.nombre }}
+      </span>
+    {% else %}
+      <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+        <i class="bi bi-exclamation-circle me-1"></i>Sin recinto asignado
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 {% if total_sin_gestionar %}col-md-3{% else %}col-md-4{% endif %}">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <i class="bi bi-calendar2-check fs-2 text-primary"></i>
+          <div>
+            <div class="text-muted small">Citas de hoy</div>
+            <div class="fs-2 fw-semibold">{{ total_hoy }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 {% if total_sin_gestionar %}col-md-3{% else %}col-md-4{% endif %}">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <i class="bi bi-hourglass-split fs-2 text-warning"></i>
+          <div>
+            <div class="text-muted small fw-light">Pendientes hoy</div>
+            <div class="fs-2 fw-semibold text-warning">{{ total_pendientes }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 {% if total_sin_gestionar %}col-md-3{% else %}col-md-4{% endif %}">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <i class="bi bi-check-circle fs-2 text-success"></i>
+          <div>
+            <div class="text-muted small fw-light">Completadas/Seguimiento</div>
+            <div class="fs-2 fw-semibold text-success">{{ total_completadas }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% if total_sin_gestionar %}
+    <div class="col-12 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 h-100 border-danger border-opacity-25">
+        <div class="card-body d-flex align-items-center gap-3 p-4">
+          <i class="bi bi-exclamation-circle fs-2 text-danger"></i>
+          <div>
+            <div class="text-muted small fw-light">Sin gestionar</div>
+            <div class="fs-2 fw-semibold text-danger">{{ total_sin_gestionar }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white border-0 px-4 pt-3 pb-0">
+      <ul class="nav nav-pills doctor-tabs justify-content-center" id="doctorTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if tab_activa == 'citas' %}active{% endif %}"
+            data-bs-toggle="pill" data-bs-target="#pane-citas" type="button">
+            <i class="bi bi-calendar3 me-1"></i>Citas del día
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if tab_activa == 'pendientes' %}active{% endif %}"
+            data-bs-toggle="pill" data-bs-target="#pane-pendientes" type="button">
+            <i class="bi bi-calendar-week me-1"></i>Próximas citas
+            {% if total_sin_gestionar %}<span class="badge bg-danger ms-1">{{ total_sin_gestionar }}</span>{% endif %}
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if tab_activa == 'disponibilidades' %}active{% endif %}"
+            data-bs-toggle="pill" data-bs-target="#pane-disponibilidades" type="button">
+            <i class="bi bi-list-check me-1"></i>Disponibilidades
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if tab_activa == 'disponibilidad' %}active{% endif %}"
+            data-bs-toggle="pill" data-bs-target="#pane-disponibilidad" type="button">
+            <i class="bi bi-gear me-1"></i>Gestionar
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body p-4">
+      <div class="tab-content">
+
+        {# ── CITAS DEL DÍA ── #}
+        <div class="tab-pane fade {% if tab_activa == 'citas' %}show active{% endif %}" id="pane-citas">
+          {% if not profesional.consultorio %}
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-building-x fs-3 d-block mb-2"></i>
+              Asigna un recinto en la pestaña <strong>Gestionar</strong> para ver tus citas.
+            </div>
+          {% else %}
+            <p class="text-muted small mb-3">Citas en <strong>{{ profesional.consultorio.nombre }}</strong> para hoy</p>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Paciente</th><th>Motivo</th><th>Hora</th><th>Estado</th><th class="text-end">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if reservas_hoy %}
+                    {% for r in reservas_hoy %}
+                    <tr>
+                      <td>
+                        <button type="button" class="btn btn-link p-0 text-start btn-historial-paciente"
+                          data-paciente-id="{{ r.paciente.id }}"
+                          data-consultorio-id="{{ profesional.consultorio.objectid }}">
+                          <i class="bi bi-person me-1 text-muted"></i>{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
+                        </button>
+                      </td>
+                      <td>{{ r.motivo }}</td>
+                      <td><i class="bi bi-clock me-1 text-muted"></i>{{ r.fecha_reserva|date:"H:i" }}</td>
+                      <td>
+                        {% if r.estado == 'confirmada' %}<span class="badge badge-estado bg-confirmado">Confirmada</span>
+                        {% elif r.estado == 'completada' %}<span class="badge badge-estado bg-completada">Completada</span>
+                        {% elif r.estado == 'seguimiento' %}<span class="badge badge-estado bg-seguimiento">Seguimiento</span>
+                        {% else %}<span class="badge badge-estado bg-pendiente">Pendiente</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_pasada=r.es_pasada %}</td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">
+                      <i class="bi bi-calendar-x fs-4 d-block mb-2"></i>No hay citas para hoy.
+                    </td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+
+        {# ── CITAS PENDIENTES (otros días) ── #}
+        <div class="tab-pane fade {% if tab_activa == 'pendientes' %}show active{% endif %}" id="pane-pendientes">
+          {% if not profesional.consultorio %}
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-building-x fs-3 d-block mb-2"></i>
+              Asigna un recinto para ver citas pendientes.
+            </div>
+          {% else %}
+
+            {# ── Sección: Sin gestionar ── #}
+            {% if reservas_sin_gestionar %}
+            <div class="mb-4">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-exclamation-circle text-danger"></i>
+                <span class="fw-semibold text-danger small">Sin gestionar ({{ total_sin_gestionar }})</span>
+                <span class="text-muted small">— Citas pasadas que no fueron marcadas</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th class="text-end">Acción</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for r in reservas_sin_gestionar %}
+                    <tr class="table-warning">
+                      <td>
+                        <button type="button" class="btn btn-link p-0 text-start btn-historial-paciente"
+                          data-paciente-id="{{ r.paciente.id }}"
+                          data-consultorio-id="{{ profesional.consultorio.objectid }}">
+                          <i class="bi bi-person me-1 text-muted"></i>{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
+                        </button>
+                      </td>
+                      <td>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
+                      <td>{{ r.fecha_reserva|date:"H:i" }}</td>
+                      <td>{{ r.motivo }}</td>
+                      <td class="text-end">
+                        <button type="button" class="btn btn-completar btn-sm me-1"
+                          data-bs-toggle="modal" data-bs-target="#modal-completar"
+                          data-reserva-id="{{ r.id }}"
+                          data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}">
+                          <i class="bi bi-clipboard2-check me-1"></i>Completar
+                        </button>
+                        <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="no_asistio">
+                          <input type="hidden" name="reserva_id" value="{{ r.id }}">
+                          <button type="submit" class="btn btn-no-asistio btn-sm">
+                            <i class="bi bi-person-x me-1"></i>No asistió
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <hr class="my-3">
+            {% endif %}
+
+            <p class="text-muted small mb-3">Próximas citas en días con disponibilidad declarada</p>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th class="text-end">Acción</th></tr>
+                </thead>
+                <tbody>
+                  {% if reservas_pendientes %}
+                    {% for r in reservas_pendientes %}
+                    <tr>
+                      <td>
+                        <button type="button" class="btn btn-link p-0 text-start btn-historial-paciente"
+                          data-paciente-id="{{ r.paciente.id }}"
+                          data-consultorio-id="{{ profesional.consultorio.objectid }}">
+                          <i class="bi bi-person me-1 text-muted"></i>{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
+                        </button>
+                      </td>
+                      <td>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
+                      <td>{{ r.fecha_reserva|date:"H:i" }}</td>
+                      <td>{{ r.motivo }}</td>
+                      <td>
+                        {% if r.estado == 'confirmada' %}<span class="badge badge-estado bg-confirmado">Confirmada</span>
+                        {% elif r.estado == 'completada' %}<span class="badge badge-estado bg-completada">Completada</span>
+                        {% elif r.estado == 'seguimiento' %}<span class="badge badge-estado bg-seguimiento">Seguimiento</span>
+                        {% else %}<span class="badge badge-estado bg-pendiente">Pendiente</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_futura=True %}</td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">
+                      <i class="bi bi-calendar-x fs-4 d-block mb-2"></i>
+                      No hay citas pendientes en tus días de disponibilidad.
+                    </td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+
+        {# ── DISPONIBILIDADES GUARDADAS ── #}
+        <div class="tab-pane fade {% if tab_activa == 'disponibilidades' %}show active{% endif %}" id="pane-disponibilidades">
+          <p class="text-muted small mb-3">Tus horarios de atención declarados</p>
+
+          {% if error_disponibilidad %}
+          <div class="alert alert-warning alert-dismissible fade show d-flex gap-2 align-items-center mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>{{ error_disponibilidad }}</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+          </div>
+          {% endif %}
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Consultorio</th><th>Fecha</th>
+                  <th>Hora inicio</th><th>Hora fin</th>
+                  <th class="text-end">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if disponibilidades %}
+                  {% for d in disponibilidades %}
+                  <tr>
+                    <td><i class="bi bi-building me-1 text-muted"></i>{{ profesional.consultorio.nombre|default:"—" }}</td>
+                    <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ d.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ d.hora_inicio|time:"H:i" }}</td>
+                    <td>{{ d.hora_fin|time:"H:i" }}</td>
+                    <td class="text-end">
+                      <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="eliminar_disponibilidad">
+                        <input type="hidden" name="disponibilidad_id" value="{{ d.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                          <i class="bi bi-trash3 me-1"></i>Eliminar
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="5" class="text-center text-muted py-4">
+                    <i class="bi bi-clock-history fs-4 d-block mb-2"></i>
+                    No has declarado disponibilidad aún.
+                  </td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {# ── GESTIONAR (recinto + disponibilidad) ── #}
+        <div class="tab-pane fade {% if tab_activa == 'disponibilidad' %}show active{% endif %}" id="pane-disponibilidad">
+          <div class="row g-4">
+
+            <div class="col-12 col-lg-6">
+              <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-body p-4">
+                  <h5 class="fw-light mb-1">Recinto actual</h5>
+                  <p class="text-muted small mb-3">Cambia tu recinto de trabajo en cualquier momento</p>
+
+                  <div class="recinto-activo rounded-3 p-3 mb-4">
+                    <span class="fw-semibold text-cd-blue">Recinto activo: </span>
+                    <span class="text-cd-blue-dark fw-light">
+                      {{ profesional.consultorio.nombre|default:"Sin recinto asignado" }}
+                    </span>
+                  </div>
+
+                  <form method="post" action="{% url 'panel_doctor' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="recinto">
+                    <div class="mb-2">
+                      <input type="text" id="filtro-recinto" class="form-control reserva-input mb-2"
+                        placeholder="Buscar recinto..." autocomplete="off">
+                      <select id="recinto" name="recinto" class="form-select reserva-input" size="6" style="height:auto;">
+                        <option value="">— Seleccionar —</option>
+                        {% for c in consultorios %}
+                          <option value="{{ c.objectid }}"
+                            {% if profesional.consultorio.objectid == c.objectid %}selected{% endif %}>
+                            {{ c.nombre }} · {{ c.nom_com }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 reserva-btn mt-2">
+                      Guardar recinto
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-body p-4">
+                  <h5 class="fw-light mb-1">Agregar disponibilidad</h5>
+                  <p class="text-muted small mb-4">Define tus horarios de atención</p>
+
+                  <form method="post" action="{% url 'panel_doctor' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="disponibilidad">
+                    <div class="mb-3">
+                      <label class="form-label reserva-label">Fecha</label>
+                      <input type="date" name="fecha" class="form-control reserva-input"/>
+                    </div>
+                    <div class="row g-3 mb-4">
+                      <div class="col-6">
+                        <label class="form-label reserva-label">Hora inicio</label>
+                        <select name="hora_inicio" class="form-select reserva-input">
+                          <option value="">Seleccionar</option>
+                          {% for hora in horas_disponibles %}
+                            <option value="{{ hora }}">{{ hora }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label reserva-label">Hora fin</label>
+                        <select name="hora_fin" class="form-select reserva-input">
+                          <option value="">Seleccionar</option>
+                          {% for hora in horas_disponibles %}
+                            <option value="{{ hora }}">{{ hora }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 reserva-btn">
+                      Guardar disponibilidad
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Modal: Historial de citas del paciente ── #}
+  <div class="modal fade" id="modal-historial" tabindex="-1" aria-labelledby="modalHistorialLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-light" id="modalHistorialLabel">
+              <i class="bi bi-person-lines-fill me-2 text-primary"></i>
+              <span id="historial-nombre"></span>
+            </h5>
+            <div class="small text-muted mt-1">
+              <span id="historial-rut"></span>
+              <span class="mx-2">·</span>
+              <span id="historial-correo"></span>
+              <span id="historial-telefono-wrap">
+                <span class="mx-2">·</span>
+                <span id="historial-telefono"></span>
+              </span>
+            </div>
+          </div>
+          <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body pt-3">
+          <p class="text-muted small mb-3">
+            Historial de citas en este consultorio
+            <span class="badge bg-light text-muted ms-1" id="historial-total"></span>
+          </p>
+          <div id="historial-cuerpo">
+            <div class="text-center py-4 text-muted">
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+              Cargando...
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Modal: Completar cita ── #}
+<div class="modal fade" id="modal-completar" tabindex="-1" aria-labelledby="modalCompletarLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-light" id="modalCompletarLabel">
+          <i class="bi bi-clipboard2-check text-success me-2"></i>Completar consulta
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form method="post" action="{% url 'panel_doctor' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="completar">
+        <input type="hidden" name="reserva_id" id="completar-reserva-id">
+        <div class="modal-body pt-2">
+          <p class="text-muted small mb-3">
+            Paciente: <strong id="completar-paciente"></strong>
+          </p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="completar-notas">
+              Instrucciones de coordinación
+              <span class="text-muted fw-normal">(opcional)</span>
+            </label>
+            <textarea id="completar-notas" name="notas_doctor" class="form-control" rows="4"
+              placeholder="Ej: Traer exámenes de sangre, ayuno previo, derivación desde urgencias..."></textarea>
+            <div class="form-text text-warning">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Solo para coordinación de la cita. No registres información clínica aquí (diagnósticos, medicación, etc.).
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-completar">
+            <i class="bi bi-check-lg me-1"></i>Marcar como completada
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ── Modal: Programar seguimiento ── #}
+<div class="modal fade" id="modal-seguimiento" tabindex="-1" aria-labelledby="modalSeguimientoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-light" id="modalSeguimientoLabel">
+          <i class="bi bi-arrow-repeat me-2" style="color:#9B59B6;"></i>Programar seguimiento
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form method="post" action="{% url 'panel_doctor' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="seguimiento">
+        <input type="hidden" name="reserva_id" id="seguimiento-reserva-id">
+        <div class="modal-body pt-2">
+          <p class="text-muted small mb-3">
+            Paciente: <strong id="seguimiento-paciente"></strong>
+          </p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="seguimiento-fecha">Fecha de seguimiento</label>
+            <input type="date" id="seguimiento-fecha" name="fecha_seguimiento" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="seguimiento-notas">
+              Instrucción de coordinación para el paciente
+              <span class="text-muted fw-normal">(opcional)</span>
+            </label>
+            <textarea id="seguimiento-notas" name="notas_doctor" class="form-control" rows="3"
+              placeholder="Ej: Traer resultados de exámenes, control post-operatorio..."></textarea>
+            <div class="form-text text-warning">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Solo para coordinación. No registres información clínica aquí.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-seguimiento">
+            <i class="bi bi-arrow-repeat me-1"></i>Programar seguimiento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Filtro de texto para el select de recintos
+  const filtro = document.getElementById('filtro-recinto');
+  const selectRecinto = document.getElementById('recinto');
+  filtro.addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    Array.from(selectRecinto.options).forEach(opt => {
+      opt.style.display = opt.value === '' || opt.text.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  // ── Modal Historial paciente ──
+  const ESTADO_LABELS = {
+    pendiente  : '<span class="badge badge-estado bg-pendiente">Pendiente</span>',
+    confirmada : '<span class="badge badge-estado bg-confirmado">Confirmada</span>',
+    completada : '<span class="badge badge-estado bg-completada">Completada</span>',
+    seguimiento: '<span class="badge badge-estado bg-seguimiento">Seguimiento</span>',
+    cancelada  : '<span class="badge badge-estado bg-secondary">Cancelada</span>',
+  };
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-historial-paciente');
+    if (!btn) return;
+
+    const pid  = btn.dataset.pacienteId;
+    const cid  = btn.dataset.consultorioId;
+    const modal = new bootstrap.Modal(document.getElementById('modal-historial'));
+
+    // Reset
+    document.getElementById('historial-nombre').textContent  = 'Cargando...';
+    document.getElementById('historial-rut').textContent     = '';
+    document.getElementById('historial-correo').textContent  = '';
+    document.getElementById('historial-telefono').textContent = '';
+    document.getElementById('historial-telefono-wrap').style.display = 'none';
+    document.getElementById('historial-total').textContent   = '';
+    document.getElementById('historial-cuerpo').innerHTML    =
+      '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2" role="status"></div>Cargando...</div>';
+
+    modal.show();
+
+    fetch(`/consultorio/historial_paciente/?paciente_id=${pid}&consultorio_id=${cid}`)
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('historial-nombre').textContent  = data.nombre;
+        document.getElementById('historial-rut').textContent     = data.rut;
+        document.getElementById('historial-correo').textContent  = data.correo;
+        document.getElementById('historial-total').textContent   = `${data.citas.length} cita${data.citas.length !== 1 ? 's' : ''}`;
+
+        if (data.telefono) {
+          document.getElementById('historial-telefono').textContent = data.telefono;
+          document.getElementById('historial-telefono-wrap').style.display = '';
+        }
+
+        if (data.citas.length === 0) {
+          document.getElementById('historial-cuerpo').innerHTML =
+            '<p class="text-muted text-center py-3">Sin citas previas en este consultorio.</p>';
+          return;
+        }
+
+        let html = '<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Motivo</th><th>Estado</th><th>Instrucción</th></tr></thead><tbody>';
+        data.citas.forEach(c => {
+          const seguimiento = c.seguimiento ? `<br><small class="text-muted"><i class="bi bi-calendar-check me-1"></i>Seguimiento: ${c.seguimiento}</small>` : '';
+          const instruccion = c.instruccion
+            ? `<span class="fst-italic text-muted small">${c.instruccion}</span>`
+            : '<span class="text-muted">—</span>';
+          html += `<tr>
+            <td class="small">${c.fecha}</td>
+            <td class="small">${c.motivo}</td>
+            <td>${ESTADO_LABELS[c.estado] || c.estado}${seguimiento}</td>
+            <td>${instruccion}</td>
+          </tr>`;
+        });
+        html += '</tbody></table></div>';
+        document.getElementById('historial-cuerpo').innerHTML = html;
+      })
+      .catch(() => {
+        document.getElementById('historial-cuerpo').innerHTML =
+          '<p class="text-danger text-center py-3">Error al cargar el historial.</p>';
+      });
+  });
+
+  // Poblar modal Completar
+  document.getElementById('modal-completar').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('completar-reserva-id').value      = btn.dataset.reservaId;
+    document.getElementById('completar-paciente').textContent  = btn.dataset.paciente;
+    document.getElementById('completar-notas').value           = '';
+  });
+
+  // Poblar modal Seguimiento
+  document.getElementById('modal-seguimiento').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('seguimiento-reserva-id').value    = btn.dataset.reservaId;
+    document.getElementById('seguimiento-paciente').textContent = btn.dataset.paciente;
+    document.getElementById('seguimiento-notas').value         = btn.dataset.notas || '';
+    document.getElementById('seguimiento-fecha').value         = '';
+  });
+</script>
+{% endblock %}
