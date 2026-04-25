@@ -30,8 +30,12 @@ class Administrador(models.Model):
         return f'{self.usuario.rut}'
     
 class Profesional(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='profesional')
+    usuario      = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='profesional')
     especialidad = models.CharField(max_length=255)
+    consultorio  = models.ForeignKey(
+        'Consultorio', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='profesionales'
+    )
 
     class Meta:
         verbose_name = 'profesional'
@@ -103,10 +107,26 @@ class Consultorio(models.Model):
         return self.nombre
 
 class Reserva(models.Model):
-    consultorio = models.ForeignKey(Consultorio, on_delete=models.CASCADE, related_name='reservas')
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='reservas')
-    fecha_reserva = models.DateTimeField()
-    motivo = models.TextField()
+    ESTADO_CHOICES = [
+        ('pendiente',   'Pendiente'),
+        ('confirmada',  'Confirmada'),
+        ('completada',  'Completada'),
+        ('seguimiento', 'Seguimiento'),
+        ('cancelada',   'Cancelada'),
+        ('no_asistio',  'No asistió'),
+    ]
+    consultorio      = models.ForeignKey(Consultorio, on_delete=models.CASCADE, related_name='reservas')
+    paciente         = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='reservas')
+    profesional      = models.ForeignKey(
+        'Profesional', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='reservas_confirmadas'
+    )
+    fecha_reserva    = models.DateTimeField()
+    motivo           = models.TextField()
+    estado              = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    fecha_seguimiento   = models.DateField(null=True, blank=True)
+    motivo_cancelacion  = models.CharField(max_length=500, null=True, blank=True)
+    notas_doctor        = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'reserva'
@@ -116,6 +136,20 @@ class Reserva(models.Model):
     def __str__(self):
         return f'Reserva de {self.paciente} en {self.consultorio.nombre} el {self.fecha_reserva}'
     
+class Disponibilidad(models.Model):
+    profesional = models.ForeignKey(Profesional, on_delete=models.CASCADE, related_name='disponibilidades')
+    fecha       = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_fin    = models.TimeField()
+
+    class Meta:
+        ordering = ['fecha', 'hora_inicio']
+        unique_together = [['profesional', 'fecha', 'hora_inicio']]
+
+    def __str__(self):
+        return f"{self.profesional} — {self.fecha} {self.hora_inicio}-{self.hora_fin}"
+
+
 class Atencion(models.Model):
     id = models.AutoField(primary_key=True)
     medicacion = models.CharField(max_length=255)
