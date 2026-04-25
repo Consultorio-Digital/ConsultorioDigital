@@ -127,6 +127,9 @@ celerybeat.pid
 env/
 venv/
 ENV/
+
+# Claude Code (archivos internos del asistente, nunca al repo)
+.claude/
 env.bak/
 venv.bak/
 
