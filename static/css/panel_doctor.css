@@ -1,0 +1,93 @@
+/* ── Tabs del doctor ── */
+.doctor-tabs .nav-link {
+  color: #333;
+  font-weight: 500;
+  border-radius: 10px 10px 0 0;
+  padding: 8px 20px;
+}
+
+.doctor-tabs .nav-link.active {
+  background-color: #fff;
+  color: #000;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Badges de estado ── */
+.badge-estado {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.bg-confirmado  { background-color: #2B7FFF !important; color: #fff !important; }
+.bg-completada  { background-color: #14AE5C !important; color: #fff !important; }
+.bg-seguimiento { background-color: #9B59B6 !important; color: #fff !important; }
+.bg-pendiente   { background-color: #F6BE4F !important; color: #fff !important; }
+.bg-no-asistio  { background-color: #E74C3C !important; color: #fff !important; }
+
+/* ── Botón no asistió ── */
+.btn-no-asistio {
+  background-color: #E74C3C;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  padding: 4px 16px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.15);
+}
+.btn-no-asistio:hover { background-color: #c0392b; color: white; }
+
+/* ── Botón completar ── */
+.btn-completar {
+  background-color: #2ABF5E;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  padding: 4px 16px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.15);
+}
+
+.btn-completar:hover {
+  background-color: #23a351;
+  color: white;
+}
+
+/* ── Botón seguimiento ── */
+.btn-seguimiento {
+  background-color: #9B59B6;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  padding: 4px 16px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.15);
+}
+.btn-seguimiento:hover { background-color: #8e44ad; color: white; }
+
+/* ── Botón reabrir ── */
+.btn-reabrir {
+  background-color: #FFCC00;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-weight: 600;
+  padding: 4px 16px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.15);
+}
+
+.btn-reabrir:hover {
+  background-color: #e6b800;
+  color: white;
+}
+
+/* ── Recinto activo ── */
+.recinto-activo {
+  background-color: #E4E2FF;
+  border-radius: 12px;
+}
+
+.text-cd-blue      { color: #0019BF; }
+.text-cd-blue-dark { color: #020F62; }

@@ -36,3 +36,43 @@ body {
     text-align: center;
     margin-top: 2em;
 }
+
+/* ── Bienvenida ── */
+.welcome-txt {
+  font-weight: 100;
+  font-size: 2.2rem;
+}
+
+/* ── Botón nueva cita ── */
+.btn-nueva-cita {
+  border-radius: 7px;
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+/* ── Badges de estado (compartidos con panel_doctor) ── */
+.badge-estado {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.bg-confirmado  { background-color: #2B7FFF !important; color: #fff !important; }
+.bg-pendiente   { background-color: #F6BE4F !important; color: #fff !important; }
+.bg-completada  { background-color: #14AE5C !important; color: #fff !important; }
+.bg-seguimiento { background-color: #9B59B6 !important; color: #fff !important; }
+.bg-cancelada   { background-color: #6c757d !important; color: #fff !important; }
+.bg-no-asistio  { background-color: #E74C3C !important; color: #fff !important; }
+
+/* ── Lista de info ── */
+.info-list li {
+  padding: 6px 0;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.info-list li:last-child {
+  border-bottom: none;
+}

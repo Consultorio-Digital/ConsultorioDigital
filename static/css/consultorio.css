@@ -1,3 +1,54 @@
-.lvl-select {
-    color:white;
+/* ── Card principal ── */
+.reserva-card {
+  border-radius: 15px;
+  margin-top: 1rem;
+}
+
+/* ── Labels ── */
+.reserva-label {
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 4px;
+}
+
+/* ── Inputs y selects ── */
+.reserva-input {
+  background-color: #F7F7F7;
+  border: none;
+  border-radius: 7px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  color: #333;
+}
+
+.reserva-input:focus {
+  background-color: #F7F7F7;
+  border-color: #2B7FFF;
+  box-shadow: 0 0 0 3px rgba(43, 127, 255, 0.15);
+}
+
+.reserva-input:disabled {
+  background-color: #F0F0F0;
+  color: #A8A8A8;
+  cursor: not-allowed;
+}
+
+/* ── Textarea ── */
+textarea.reserva-input {
+  resize: vertical;
+  min-height: 84px;
+}
+
+/* ── Botón reservar ── */
+.reserva-btn {
+  height: 43px;
+  border-radius: 15px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background-color: #2B7FFF;
+  border: none;
+  letter-spacing: 0.02em;
+}
+
+.reserva-btn:hover {
+  background-color: #1a6fef;
 }
