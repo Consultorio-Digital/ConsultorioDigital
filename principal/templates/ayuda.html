@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ayuda y Contacto — Consultorio Digital{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/principal.css' %}"/>
+{% endblock %}
+
+{% block navbar %}
+  <ul class="navbar-nav me-auto gap-lg-1">
+    {% if user.is_authenticated %}
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'principal:principal' %}">Inicio</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'mis_horas' %}">Mis horas</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'consultorio' %}">Reservar hora</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'cancelar_hora' %}">Cancelar hora</a>
+      </li>
+    {% else %}
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'principal:principal' %}">Inicio</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'registro' %}">Crea tu cuenta</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'login' %}">Ingresa</a>
+      </li>
+    {% endif %}
+  </ul>
+{% endblock %}
+
+{% block content %}
+
+  <div class="mb-4 text-center">
+    <h1 class="fw-light mb-1">
+      <i class="bi bi-question-circle me-2 text-primary"></i>Ayuda y Contacto
+    </h1>
+    <p class="text-muted fs-5 fw-light">Encuentra respuestas rápidas o contáctanos directamente</p>
+  </div>
+
+  {# ── Preguntas frecuentes ── #}
+  <div class="card border-0 shadow-sm rounded-3 mb-4" id="faq">
+    <div class="card-body p-4">
+
+      <h5 class="fw-semibold mb-4">
+        <i class="bi bi-chat-left-text me-2 text-primary"></i>Preguntas frecuentes
+      </h5>
+
+      <div class="accordion accordion-flush" id="accordionFAQ">
+
+        <div class="accordion-item border rounded-3 mb-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed rounded-3 fw-semibold" type="button"
+              data-bs-toggle="collapse" data-bs-target="#faq1">
+              ¿Cómo reservo una hora médica?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+            <div class="accordion-body text-muted">
+              Inicia sesión y haz clic en <strong>Reservar hora</strong> en el menú superior.
+              Selecciona tu región, comuna, consultorio, doctor, fecha y horario disponible.
+              Describe brevemente el motivo de tu consulta y confirma la reserva.
+              Recibirás una confirmación en pantalla de inmediato.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed rounded-3 fw-semibold" type="button"
+              data-bs-toggle="collapse" data-bs-target="#faq2">
+              ¿Cuánto tiempo tiene el doctor para confirmar mi cita?
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+            <div class="accordion-body text-muted">
+              El doctor cuenta con un plazo máximo de <strong>24 horas</strong> para confirmar tu cita.
+              Puedes revisar el estado actualizado en la sección <strong>Inicio</strong>.
+              Si la cita sigue en estado "Pendiente" pasadas las 24 horas, contáctanos.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed rounded-3 fw-semibold" type="button"
+              data-bs-toggle="collapse" data-bs-target="#faq3">
+              ¿Cómo cancelo una cita?
+            </button>
+          </h2>
+          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+            <div class="accordion-body text-muted">
+              Ve a <strong>Cancelar hora</strong> en el menú superior.
+              Selecciona la cita que deseas cancelar, se generará un código de verificación
+              que deberás ingresar para confirmar la cancelación.
+              Te recomendamos cancelar con al menos <strong>24 horas de anticipación</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed rounded-3 fw-semibold" type="button"
+              data-bs-toggle="collapse" data-bs-target="#faq4">
+              ¿Dónde veo mis citas anteriores?
+            </button>
+          </h2>
+          <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+            <div class="accordion-body text-muted">
+              En el menú superior, haz clic en <strong>Mis horas</strong>.
+              Ahí encontrarás el historial completo de tus citas pasadas, completadas y canceladas,
+              ordenadas de más reciente a más antigua.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed rounded-3 fw-semibold" type="button"
+              data-bs-toggle="collapse" data-bs-target="#faq5">
+              ¿Qué significa cada estado de mi cita?
+            </button>
+          </h2>
+          <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+            <div class="accordion-body text-muted">
+              <ul class="list-unstyled mb-0">
+                <li class="mb-2">
+                  <span class="badge bg-pendiente me-2">Pendiente</span>
+                  Tu cita fue recibida y está esperando confirmación del doctor.
+                </li>
+                <li class="mb-2">
+                  <span class="badge bg-confirmado me-2">Confirmada</span>
+                  El doctor ha confirmado tu cita. Recuerda llegar 15 minutos antes.
+                </li>
+                <li class="mb-2">
+                  <span class="badge bg-completada me-2">Completada</span>
+                  La consulta fue realizada con éxito.
+                </li>
+                <li class="mb-2">
+                  <span class="badge bg-seguimiento me-2">Seguimiento</span>
+                  El doctor ha programado un control de seguimiento para tu caso.
+                </li>
+                <li class="mb-2">
+                  <span class="badge bg-secondary me-2">Cancelada</span>
+                  La cita fue cancelada.
+                </li>
+                <li>
+                  <span class="badge bg-no-asistio me-2">No asistió</span>
+                  No se registró asistencia a la consulta.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed rounded-3 fw-semibold" type="button"
+              data-bs-toggle="collapse" data-bs-target="#faq6">
+              ¿Qué debo traer a mi consulta?
+            </button>
+          </h2>
+          <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+            <div class="accordion-body text-muted">
+              <ul class="mb-0">
+                <li>Cédula de identidad vigente</li>
+                <li>Carnet de FONASA o ISAPRE si corresponde</li>
+                <li>Exámenes o documentos médicos previos relacionados al motivo de consulta</li>
+                <li>Lista de medicamentos que consumes actualmente</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Contacto ── #}
+  <div class="card border-0 shadow-sm rounded-3" id="contacto">
+    <div class="card-body p-4">
+
+      <h5 class="fw-semibold mb-4">
+        <i class="bi bi-envelope me-2 text-primary"></i>Contacto
+      </h5>
+
+      <div class="row g-4">
+
+        <div class="col-12 col-md-4">
+          <div class="d-flex align-items-start gap-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="min-width:48px;height:48px;">
+              <i class="bi bi-telephone text-primary fs-5"></i>
+            </div>
+            <div>
+              <div class="fw-semibold mb-1">Teléfono</div>
+              <div class="text-muted small">Lunes a viernes, 08:00 – 17:00</div>
+              <a href="tel:+56223456789" class="text-primary text-decoration-none">+56 2 2345 6789</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="d-flex align-items-start gap-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="min-width:48px;height:48px;">
+              <i class="bi bi-envelope text-primary fs-5"></i>
+            </div>
+            <div>
+              <div class="fw-semibold mb-1">Correo electrónico</div>
+              <div class="text-muted small">Respuesta en 24 horas hábiles</div>
+              <a href="mailto:contacto@consultoriodigital.cl" class="text-primary text-decoration-none">
+                contacto@consultoriodigital.cl
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="d-flex align-items-start gap-3">
+            <div class="rounded-circle bg-danger bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="min-width:48px;height:48px;">
+              <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
+            </div>
+            <div>
+              <div class="fw-semibold mb-1">Emergencias</div>
+              <div class="text-muted small">SAMU — disponible las 24 horas</div>
+              <a href="tel:131" class="text-danger text-decoration-none fw-semibold">131</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

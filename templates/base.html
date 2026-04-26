@@ -61,10 +61,7 @@
           <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
 
             <li class="nav-item">
-              <a class="nav-link text-white" href="#">Contacto</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white" href="#">Ayuda</a>
+              <a class="nav-link text-white" href="{% url 'principal:ayuda' %}">Ayuda</a>
             </li>
 
             {% if user.is_authenticated %}

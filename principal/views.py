@@ -5,6 +5,10 @@ from django.db.models import Q
 from django.utils import timezone
 from consultorio.models import Reserva, Profesional
 
+def ayuda(request: HttpRequest):
+    return render(request, 'ayuda.html', {'title': 'Ayuda y Contacto'})
+
+
 def home(request: HttpRequest):
     if not request.user.is_authenticated:
         return redirect('login')
