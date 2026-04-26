@@ -505,18 +505,20 @@ def panel_doctor(request):
                 pass
             return redirect(request.path)
 
-    tab_activa          = request.GET.get('tab', 'citas')
+    tab_activa           = request.GET.get('tab', 'citas')
     error_disponibilidad = request.session.pop('error_disponibilidad', None)
 
     # ── Queries según recinto asignado ────────────────────────────────
-    reservas_hoy          = []
-    reservas_pendientes   = []
+    reservas_hoy           = []
+    reservas_pendientes    = []
     reservas_sin_gestionar = []
-    disponibilidades      = []
-    total_hoy             = 0
-    total_pendientes      = 0
-    total_completadas     = 0
-    total_sin_gestionar   = 0
+    disponibilidades       = []
+    page_historial         = None
+    total_hoy              = 0
+    total_pendientes       = 0
+    total_completadas      = 0
+    total_sin_gestionar    = 0
+    total_historial        = 0
 
     if profesional.consultorio:
         from django.db.models import ExpressionWrapper, BooleanField, Q as Qm
@@ -579,6 +581,21 @@ def panel_doctor(request):
             .order_by('fecha', 'hora_inicio')
         )
 
+        # Historial del doctor: citas cerradas en su consultorio
+        from django.core.paginator import Paginator as Pag
+        qs_historial = (
+            Reserva.objects
+            .filter(
+                profesional=profesional,
+                estado__in=['completada', 'seguimiento', 'no_asistio', 'cancelada'],
+            )
+            .select_related('paciente__usuario')
+            .order_by('-fecha_reserva')
+        )
+        total_historial = qs_historial.count()
+        pag_historial   = Pag(qs_historial, 15)
+        page_historial  = pag_historial.get_page(request.GET.get('page_h'))
+
     horas_disponibles = [
         f"{h:02d}:{m:02d}"
         for h in range(7, 21)
@@ -603,4 +620,6 @@ def panel_doctor(request):
         'error_disponibilidad'  : error_disponibilidad,
         'reservas_sin_gestionar': reservas_sin_gestionar,
         'total_sin_gestionar'   : total_sin_gestionar,
+        'page_historial'        : page_historial,
+        'total_historial'       : total_historial,
     })

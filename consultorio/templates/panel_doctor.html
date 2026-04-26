@@ -105,6 +105,15 @@
           </button>
         </li>
         <li class="nav-item" role="presentation">
+          <button class="nav-link {% if tab_activa == 'historial' %}active{% endif %}"
+            data-bs-toggle="pill" data-bs-target="#pane-historial" type="button">
+            <i class="bi bi-clock-history me-1"></i>Historial
+            {% if total_historial %}
+              <span class="badge bg-secondary ms-1">{{ total_historial }}</span>
+            {% endif %}
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
           <button class="nav-link {% if tab_activa == 'disponibilidad' %}active{% endif %}"
             data-bs-toggle="pill" data-bs-target="#pane-disponibilidad" type="button">
             <i class="bi bi-gear me-1"></i>Gestionar
@@ -318,6 +327,132 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        {# ── HISTORIAL DEL DOCTOR ── #}
+        <div class="tab-pane fade {% if tab_activa == 'historial' %}show active{% endif %}" id="pane-historial">
+          {% if not profesional.consultorio %}
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-building-x fs-3 d-block mb-2"></i>
+              Asigna un recinto para ver el historial.
+            </div>
+          {% elif not page_historial or not page_historial.object_list %}
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-clock-history fs-2 d-block mb-3 opacity-50"></i>
+              <div class="fw-semibold mb-1">Sin historial aún</div>
+              <div class="small">Las citas completadas, de seguimiento, canceladas y no asistidas aparecerán aquí.</div>
+            </div>
+          {% else %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <p class="text-muted small mb-0">
+                Citas cerradas en <strong>{{ profesional.consultorio.nombre }}</strong>
+              </p>
+              <span class="badge bg-secondary rounded-pill px-3 py-2">
+                {{ total_historial }} registro{% if total_historial != 1 %}s{% endif %}
+              </span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Paciente</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Motivo</th>
+                    <th>Estado</th>
+                    <th>Instrucción</th>
+                    <th>Seguimiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in page_historial %}
+                  <tr>
+                    <td>
+                      <button type="button" class="btn btn-link p-0 text-start btn-historial-paciente"
+                        data-paciente-id="{{ r.paciente.id }}"
+                        data-consultorio-id="{{ profesional.consultorio.objectid }}">
+                        <i class="bi bi-person me-1 text-muted"></i>{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
+                      </button>
+                    </td>
+                    <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
+                    <td><i class="bi bi-clock me-1 text-muted"></i>{{ r.fecha_reserva|date:"H:i" }}</td>
+                    <td>{{ r.motivo }}</td>
+                    <td>
+                      {% if r.estado == 'completada' %}
+                        <span class="badge badge-estado bg-completada">Completada</span>
+                      {% elif r.estado == 'seguimiento' %}
+                        <span class="badge badge-estado bg-seguimiento">Seguimiento</span>
+                      {% elif r.estado == 'no_asistio' %}
+                        <span class="badge badge-estado bg-no-asistio">No asistió</span>
+                      {% elif r.estado == 'cancelada' %}
+                        <span class="badge badge-estado bg-secondary">Cancelada</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if r.notas_doctor %}
+                        <span class="small fst-italic text-muted">{{ r.notas_doctor }}</span>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if r.fecha_seguimiento %}
+                        <i class="bi bi-calendar-check me-1 text-muted"></i>{{ r.fecha_seguimiento|date:"d/m/Y" }}
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {# Paginación #}
+            {% if page_historial.has_other_pages %}
+              <nav class="mt-4 d-flex justify-content-center" aria-label="Paginación historial">
+                <ul class="pagination pagination-sm mb-0">
+
+                  {% if page_historial.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?tab=historial&page_h={{ page_historial.previous_page_number }}">
+                        <i class="bi bi-chevron-left"></i>
+                      </a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                    </li>
+                  {% endif %}
+
+                  {% for num in page_historial.paginator.page_range %}
+                    {% if page_historial.number == num %}
+                      <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_historial.number|add:"-3" and num < page_historial.number|add:"3" %}
+                      <li class="page-item">
+                        <a class="page-link" href="?tab=historial&page_h={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+
+                  {% if page_historial.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?tab=historial&page_h={{ page_historial.next_page_number }}">
+                        <i class="bi bi-chevron-right"></i>
+                      </a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                    </li>
+                  {% endif %}
+
+                </ul>
+              </nav>
+            {% endif %}
+
+          {% endif %}
         </div>
 
         {# ── GESTIONAR (recinto + disponibilidad) ── #}
