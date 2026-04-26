@@ -161,7 +161,7 @@
                         {% else %}<span class="badge badge-estado bg-pendiente">Pendiente</span>
                         {% endif %}
                       </td>
-                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_pasada=r.es_pasada %}</td>
+                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_pasada=r.es_pasada tab_activa="citas" %}</td>
                     </tr>
                     {% endfor %}
                   {% else %}
@@ -214,13 +214,15 @@
                         <button type="button" class="btn btn-completar btn-sm me-1"
                           data-bs-toggle="modal" data-bs-target="#modal-completar"
                           data-reserva-id="{{ r.id }}"
-                          data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}">
+                          data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
+                          data-tab="pendientes">
                           <i class="bi bi-clipboard2-check me-1"></i>Completar
                         </button>
                         <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
                           {% csrf_token %}
                           <input type="hidden" name="action" value="no_asistio">
                           <input type="hidden" name="reserva_id" value="{{ r.id }}">
+                          <input type="hidden" name="tab_activa" value="pendientes">
                           <button type="submit" class="btn btn-no-asistio btn-sm">
                             <i class="bi bi-person-x me-1"></i>No asistió
                           </button>
@@ -262,7 +264,7 @@
                         {% else %}<span class="badge badge-estado bg-pendiente">Pendiente</span>
                         {% endif %}
                       </td>
-                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_futura=True %}</td>
+                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_futura=True tab_activa="pendientes" %}</td>
                     </tr>
                     {% endfor %}
                   {% else %}
@@ -288,6 +290,56 @@
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
           </div>
           {% endif %}
+
+          {# Toggle calendario #}
+          <div class="mb-3">
+            <button class="btn btn-outline-primary btn-sm rounded-pill px-3"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#cal-collapse"
+              id="btn-toggle-calendario">
+              <i class="bi bi-calendar3 me-1"></i>Ver calendario
+            </button>
+          </div>
+          <div class="collapse mb-4" id="cal-collapse">
+            <div class="card border-0 bg-light rounded-3">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="cal-prev">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                  <span class="fw-semibold" id="cal-titulo"></span>
+                  <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="cal-next">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered text-center mb-0" style="min-width:420px;">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="fw-normal text-muted small py-2">Lun</th>
+                        <th class="fw-normal text-muted small py-2">Mar</th>
+                        <th class="fw-normal text-muted small py-2">Mié</th>
+                        <th class="fw-normal text-muted small py-2">Jue</th>
+                        <th class="fw-normal text-muted small py-2">Vie</th>
+                        <th class="fw-normal text-muted small py-2">Sáb</th>
+                        <th class="fw-normal text-muted small py-2">Dom</th>
+                      </tr>
+                    </thead>
+                    <tbody id="cal-cuerpo"></tbody>
+                  </table>
+                </div>
+                <div id="cal-detalle" class="mt-3 d-none">
+                  <div class="card border-0 bg-primary bg-opacity-10 rounded-3">
+                    <div class="card-body p-3">
+                      <div class="fw-semibold mb-2" id="cal-detalle-fecha"></div>
+                      <div id="cal-detalle-bloques"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -599,6 +651,7 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="completar">
         <input type="hidden" name="reserva_id" id="completar-reserva-id">
+        <input type="hidden" name="tab_activa" id="completar-tab">
         <div class="modal-body pt-2">
           <p class="text-muted small mb-3">
             Paciente: <strong id="completar-paciente"></strong>
@@ -641,6 +694,7 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="seguimiento">
         <input type="hidden" name="reserva_id" id="seguimiento-reserva-id">
+        <input type="hidden" name="tab_activa" id="seguimiento-tab">
         <div class="modal-body pt-2">
           <p class="text-muted small mb-3">
             Paciente: <strong id="seguimiento-paciente"></strong>
@@ -677,7 +731,111 @@
 
 {% block extra_js %}
 <script>
-  // Filtro de texto para el select de recintos
+  // ── Calendario de disponibilidad ──
+  const DISP = {{ disponibilidades_json|safe }};
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let calAnio = new Date().getFullYear();
+  let calMes  = new Date().getMonth();  // 0-based
+  let diaSeleccionado = null;
+
+  function renderCalendario() {
+    document.getElementById('cal-titulo').textContent = `${MESES[calMes]} ${calAnio}`;
+    const cuerpo  = document.getElementById('cal-cuerpo');
+    cuerpo.innerHTML = '';
+
+    // Primer día de la semana del mes (lunes=0)
+    const primerDia = new Date(calAnio, calMes, 1);
+    const diasMes   = new Date(calAnio, calMes + 1, 0).getDate();
+    let inicio = (primerDia.getDay() + 6) % 7;  // lunes como primer día
+
+    let dia = 1;
+    let filas = Math.ceil((inicio + diasMes) / 7);
+
+    for (let f = 0; f < filas; f++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < 7; c++) {
+        const td = document.createElement('td');
+        td.style.height = '60px';
+        td.style.verticalAlign = 'middle';
+        td.style.cursor = 'default';
+
+        const pos = f * 7 + c;
+        if (pos < inicio || dia > diasMes) {
+          td.classList.add('text-muted', 'bg-light');
+        } else {
+          const mm   = String(calMes + 1).padStart(2, '0');
+          const dd   = String(dia).padStart(2, '0');
+          const key  = `${calAnio}-${mm}-${dd}`;
+          const hoy  = new Date();
+          const esHoy = (dia === hoy.getDate() && calMes === hoy.getMonth() && calAnio === hoy.getFullYear());
+
+          td.innerHTML = `<span class="fw-semibold${esHoy ? ' text-primary' : ''}">${dia}</span>`;
+
+          if (DISP[key]) {
+            const n = DISP[key].length;
+            td.classList.add('bg-primary', 'bg-opacity-10');
+            td.style.cursor = 'pointer';
+            td.innerHTML += `<br><small class="text-primary">${n} bloque${n > 1 ? 's' : ''}</small>`;
+            td.dataset.fecha = key;
+
+            if (diaSeleccionado === key) {
+              td.classList.add('border', 'border-primary', 'border-2');
+            }
+
+            td.addEventListener('click', function () {
+              diaSeleccionado = this.dataset.fecha;
+              mostrarDetalle(this.dataset.fecha);
+              renderCalendario();
+            });
+          }
+          dia++;
+        }
+        tr.appendChild(td);
+      }
+      cuerpo.appendChild(tr);
+    }
+  }
+
+  function mostrarDetalle(key) {
+    const bloques = DISP[key];
+    const detalle = document.getElementById('cal-detalle');
+    const [anio, mes, dia] = key.split('-');
+    document.getElementById('cal-detalle-fecha').innerHTML =
+      `<i class="bi bi-calendar3 me-2 text-primary"></i>${dia}/${mes}/${anio}`;
+
+    let html = '<div class="d-flex flex-wrap gap-2">';
+    bloques.forEach(b => {
+      html += `<span class="badge bg-primary bg-opacity-75 rounded-pill px-3 py-2 fs-6">
+                 <i class="bi bi-clock me-1"></i>${b.inicio} – ${b.fin}
+               </span>`;
+    });
+    html += '</div>';
+    document.getElementById('cal-detalle-bloques').innerHTML = html;
+    detalle.classList.remove('d-none');
+  }
+
+  document.getElementById('cal-prev').addEventListener('click', function () {
+    calMes--;
+    if (calMes < 0) { calMes = 11; calAnio--; }
+    diaSeleccionado = null;
+    document.getElementById('cal-detalle').classList.add('d-none');
+    renderCalendario();
+  });
+
+  document.getElementById('cal-next').addEventListener('click', function () {
+    calMes++;
+    if (calMes > 11) { calMes = 0; calAnio++; }
+    diaSeleccionado = null;
+    document.getElementById('cal-detalle').classList.add('d-none');
+    renderCalendario();
+  });
+
+  // Renderizar al abrir el collapse
+  document.getElementById('cal-collapse').addEventListener('shown.bs.collapse', renderCalendario);
+
+  // ── Filtro de texto para el select de recintos ──
   const filtro = document.getElementById('filtro-recinto');
   const selectRecinto = document.getElementById('recinto');
   filtro.addEventListener('input', function () {
@@ -760,18 +918,20 @@
   // Poblar modal Completar
   document.getElementById('modal-completar').addEventListener('show.bs.modal', function (e) {
     const btn = e.relatedTarget;
-    document.getElementById('completar-reserva-id').value      = btn.dataset.reservaId;
-    document.getElementById('completar-paciente').textContent  = btn.dataset.paciente;
-    document.getElementById('completar-notas').value           = '';
+    document.getElementById('completar-reserva-id').value     = btn.dataset.reservaId;
+    document.getElementById('completar-paciente').textContent = btn.dataset.paciente;
+    document.getElementById('completar-notas').value          = '';
+    document.getElementById('completar-tab').value            = btn.dataset.tab || 'citas';
   });
 
   // Poblar modal Seguimiento
   document.getElementById('modal-seguimiento').addEventListener('show.bs.modal', function (e) {
     const btn = e.relatedTarget;
-    document.getElementById('seguimiento-reserva-id').value    = btn.dataset.reservaId;
+    document.getElementById('seguimiento-reserva-id').value     = btn.dataset.reservaId;
     document.getElementById('seguimiento-paciente').textContent = btn.dataset.paciente;
-    document.getElementById('seguimiento-notas').value         = btn.dataset.notas || '';
-    document.getElementById('seguimiento-fecha').value         = '';
+    document.getElementById('seguimiento-notas').value          = btn.dataset.notas || '';
+    document.getElementById('seguimiento-fecha').value          = '';
+    document.getElementById('seguimiento-tab').value            = btn.dataset.tab || 'citas';
   });
 </script>
 {% endblock %}

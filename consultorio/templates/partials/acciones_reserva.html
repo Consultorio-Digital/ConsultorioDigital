@@ -3,13 +3,15 @@
   <button type="button" class="btn btn-completar btn-sm me-1"
     data-bs-toggle="modal" data-bs-target="#modal-completar"
     data-reserva-id="{{ r.id }}"
-    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}">
+    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
+    data-tab="{{ tab_activa|default:'citas' }}">
     <i class="bi bi-clipboard2-check me-1"></i>Completar
   </button>
   <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
     {% csrf_token %}
     <input type="hidden" name="action" value="no_asistio">
     <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
     <button type="submit" class="btn btn-no-asistio btn-sm">
       <i class="bi bi-person-x me-1"></i>No asistió
     </button>
@@ -20,35 +22,37 @@
     {% csrf_token %}
     <input type="hidden" name="action" value="confirmar">
     <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
     <button type="submit" class="btn btn-completar btn-sm">
       <i class="bi bi-check-lg me-1"></i>Confirmar
     </button>
   </form>
 
 {% elif r.estado == 'confirmada' %}
-  {% if not es_futura %}
+  {% if not es_futura and es_pasada %}
   <button type="button" class="btn btn-completar btn-sm"
     data-bs-toggle="modal" data-bs-target="#modal-completar"
     data-reserva-id="{{ r.id }}"
-    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}">
+    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
+    data-tab="{{ tab_activa|default:'citas' }}">
     <i class="bi bi-clipboard2-check me-1"></i>Completar
   </button>
-  {% else %}
-  <span class="text-muted small">Confirmada</span>
-  {% endif %}
+  {% else %}{% endif %}
 
 {% elif r.estado == 'completada' %}
   <button type="button" class="btn btn-seguimiento btn-sm me-1"
     data-bs-toggle="modal" data-bs-target="#modal-seguimiento"
     data-reserva-id="{{ r.id }}"
     data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
-    data-notas="{{ r.notas_doctor|default:'' }}">
+    data-notas="{{ r.notas_doctor|default:'' }}"
+    data-tab="{{ tab_activa|default:'citas' }}">
     <i class="bi bi-arrow-repeat me-1"></i>Seguimiento
   </button>
   <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
     {% csrf_token %}
     <input type="hidden" name="action" value="reabrir">
     <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
     <button type="submit" class="btn btn-reabrir btn-sm">
       <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
     </button>
@@ -59,6 +63,7 @@
     {% csrf_token %}
     <input type="hidden" name="action" value="reabrir">
     <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
     <button type="submit" class="btn btn-reabrir btn-sm">
       <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
     </button>
@@ -69,6 +74,7 @@
     {% csrf_token %}
     <input type="hidden" name="action" value="reabrir">
     <input type="hidden" name="reserva_id" value="{{ r.id }}">
+    <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
     <button type="submit" class="btn btn-reabrir btn-sm">
       <i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir
     </button>
