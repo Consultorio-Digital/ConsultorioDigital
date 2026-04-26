@@ -32,6 +32,9 @@ def seleccionar_region(request):
         motivo         = request.POST.get('motivo', '').strip()
         slot           = request.POST.get('slot')  # "YYYY-MM-DD HH:MM"
 
+        if not motivo:
+            return redirect('consultorio')
+
         try:
             fecha_reserva = datetime.strptime(slot, "%Y-%m-%d %H:%M")
             if timezone.is_naive(fecha_reserva):
@@ -465,20 +468,21 @@ def panel_doctor(request):
             try:
                 reserva = Reserva.objects.get(
                     id=reserva_id,
-                    consultorio=profesional.consultorio,
+                    profesional=profesional,
                 )
                 reserva.estado = 'no_asistio'
                 reserva.save()
             except Reserva.DoesNotExist:
                 pass
-            return redirect(request.path)
+            tab = request.POST.get('tab_activa', 'citas')
+            return redirect(f"{request.path}?tab={tab}")
 
         elif action in ('confirmar', 'completar', 'seguimiento', 'reabrir'):
             reserva_id = request.POST.get('reserva_id')
             try:
                 reserva = Reserva.objects.get(
                     id=reserva_id,
-                    consultorio=profesional.consultorio,
+                    profesional=profesional,
                 )
                 if action == 'confirmar':
                     reserva.estado      = 'confirmada'
@@ -497,13 +501,14 @@ def panel_doctor(request):
                     if notas:
                         reserva.notas_doctor = notas
                 elif action == 'reabrir':
-                    reserva.estado            = 'confirmada'
+                    reserva.estado            = 'pendiente'
                     reserva.notas_doctor      = None
                     reserva.fecha_seguimiento = None
                 reserva.save()
             except Reserva.DoesNotExist:
                 pass
-            return redirect(request.path)
+            tab = request.POST.get('tab_activa', 'citas')
+            return redirect(f"{request.path}?tab={tab}")
 
     tab_activa           = request.GET.get('tab', 'citas')
     error_disponibilidad = request.session.pop('error_disponibilidad', None)
@@ -514,6 +519,7 @@ def panel_doctor(request):
     reservas_sin_gestionar = []
     disponibilidades       = []
     page_historial         = None
+    disponibilidades_json  = '{}'
     total_hoy              = 0
     total_pendientes       = 0
     total_completadas      = 0
@@ -526,7 +532,7 @@ def panel_doctor(request):
         reservas_hoy = (
             Reserva.objects
             .filter(
-                consultorio=profesional.consultorio,
+                profesional=profesional,
                 fecha_reserva__date=hoy,
             )
             .exclude(estado='cancelada')
@@ -566,10 +572,10 @@ def panel_doctor(request):
         reservas_pendientes = (
             Reserva.objects
             .filter(
-                consultorio=profesional.consultorio,
+                profesional=profesional,
                 fecha_reserva__date__in=fechas_disp,
             )
-            .exclude(estado='cancelada')
+            .exclude(estado__in=['cancelada', 'completada', 'seguimiento', 'no_asistio'])
             .select_related('paciente__usuario')
             .order_by('fecha_reserva')
         )
@@ -580,6 +586,19 @@ def panel_doctor(request):
             .select_related('profesional__consultorio')
             .order_by('fecha', 'hora_inicio')
         )
+
+        # Serializar disponibilidades para el calendario JS
+        import json
+        disp_cal = {}
+        for d in disponibilidades:
+            key = str(d.fecha)
+            if key not in disp_cal:
+                disp_cal[key] = []
+            disp_cal[key].append({
+                'inicio': d.hora_inicio.strftime('%H:%M'),
+                'fin'   : d.hora_fin.strftime('%H:%M'),
+            })
+        disponibilidades_json = json.dumps(disp_cal)
 
         # Historial del doctor: citas cerradas en su consultorio
         from django.core.paginator import Paginator as Pag
@@ -622,4 +641,5 @@ def panel_doctor(request):
         'total_sin_gestionar'   : total_sin_gestionar,
         'page_historial'        : page_historial,
         'total_historial'       : total_historial,
+        'disponibilidades_json' : disponibilidades_json,
     })
