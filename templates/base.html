@@ -21,6 +21,109 @@
     {# ── Estilos propios ── #}
     <link rel="stylesheet" href="{% static 'css/navbar.css' %}" />
 
+    {# ── Flatpickr ── #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
+    <style>
+      /* Contenedor: sombra y bordes redondeados */
+      .flatpickr-calendar {
+        font-family: inherit !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,.12) !important;
+        border-radius: 0.5rem !important;
+        overflow: hidden;
+        border: 1px solid #dee2e6 !important;
+      }
+
+      /* ── Cabecera azul unificada ── */
+      .flatpickr-months {
+        background: #0d6efd !important;
+        padding: 6px 0 8px !important;
+      }
+      .flatpickr-month {
+        background: transparent !important;
+      }
+
+      /* Flechas: padding lateral para que respiren, blancas y semi-gruesas */
+      .flatpickr-prev-month,
+      .flatpickr-next-month {
+        padding: 6px 14px !important;
+        top: 4px !important;
+      }
+      .flatpickr-prev-month svg,
+      .flatpickr-next-month svg {
+        fill: white !important;
+        width: 14px;
+        height: 14px;
+      }
+      .flatpickr-prev-month svg path,
+      .flatpickr-next-month svg path {
+        stroke: white;
+        stroke-width: 0.8px;
+      }
+      .flatpickr-prev-month:hover svg,
+      .flatpickr-next-month:hover svg {
+        fill: rgba(255,255,255,0.65) !important;
+      }
+
+      /* Mes y año: semi-negrita, blanco, ligeramente más grande */
+      .flatpickr-current-month {
+        color: white !important;
+        padding-top: 4px !important;
+      }
+      .flatpickr-monthDropdown-months,
+      .fp-year-select {
+        font-family  : inherit !important;
+        font-size    : 1rem !important;
+        font-weight  : 600 !important;
+        background   : transparent !important;
+        color        : white !important;
+        border       : none !important;
+        cursor       : pointer !important;
+        appearance   : auto !important;
+      }
+      /* Opciones del desplegable: fondo blanco, texto oscuro */
+      .flatpickr-monthDropdown-months option,
+      .fp-year-select option {
+        background  : white !important;
+        color       : #212529 !important;
+        font-weight : normal !important;
+      }
+      .fp-year-select:focus { outline: none; }
+
+      /* Triángulo apunta al mismo azul */
+      .flatpickr-calendar::before { border-bottom-color: #0b63e5 !important; }
+      .flatpickr-calendar::after  { border-bottom-color: #0d6efd !important; }
+
+      /* Franja días de semana */
+      .flatpickr-weekdays,
+      span.flatpickr-weekday {
+        font-family : inherit !important;
+        font-size   : 0.825rem !important;
+        background  : #0d6efd !important;
+        color       : rgba(255,255,255,0.85) !important;
+      }
+
+      /* Días del mes */
+      .flatpickr-day {
+        font-family: inherit !important;
+        font-size  : 0.9rem !important;
+      }
+      .flatpickr-day.selected,
+      .flatpickr-day.selected:hover {
+        background   : #0d6efd !important;
+        border-color : #0d6efd !important;
+        color        : white !important;
+      }
+      .flatpickr-day.today {
+        border-color : #0d6efd !important;
+        color        : #0d6efd !important;
+      }
+      .flatpickr-day.today.selected { color: white !important; }
+      .flatpickr-day:hover:not(.selected) { background: #e7f0ff !important; }
+
+      /* Ocultar input numérico del año */
+      .numInputWrapper { display: none !important; }
+    </style>
+
     {% block extra_css %}{% endblock %}
   </head>
 
@@ -60,9 +163,11 @@
           {# Derecha — siempre visible #}
           <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
 
+            {% block navbar_ayuda %}
             <li class="nav-item">
               <a class="nav-link text-white" href="{% url 'principal:ayuda' %}">Ayuda</a>
             </li>
+            {% endblock %}
 
             {% if user.is_authenticated %}
               <li class="nav-item dropdown">
@@ -102,6 +207,53 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script>
+      flatpickr.localize(flatpickr.l10ns.es);
+
+      function crearSelectorAnio(fp) {
+        const header = fp.calendarContainer.querySelector('.flatpickr-current-month');
+        if (!header || header.querySelector('.fp-year-select')) return;
+
+        const cur = fp.currentYear;
+        const sel = document.createElement('select');
+        sel.className = 'fp-year-select';
+
+        for (let y = cur - 10; y <= cur + 15; y++) {
+          const o = document.createElement('option');
+          o.value = y;
+          o.textContent = y;
+          if (y === cur) o.selected = true;
+          sel.appendChild(o);
+        }
+        sel.addEventListener('change', function () {
+          fp.changeYear(+this.value);
+        });
+        header.appendChild(sel);
+      }
+
+      function sincronizarAnio(fp) {
+        const sel = fp.calendarContainer.querySelector('.fp-year-select');
+        if (sel) sel.value = fp.currentYear;
+      }
+
+      document.querySelectorAll('input[type="date"]').forEach(function (el) {
+        flatpickr(el, {
+          dateFormat   : 'Y-m-d',
+          altInput     : true,
+          altFormat    : 'j \\de F \\de Y',
+          allowInput   : false,
+          disableMobile: true,
+          onReady: function (_, __, fp) {
+            if (fp.altInput) fp.altInput.placeholder = 'Seleccionar fecha';
+            crearSelectorAnio(fp);
+          },
+          onMonthChange: function (_, __, fp) { sincronizarAnio(fp); },
+          onYearChange : function (_, __, fp) { sincronizarAnio(fp); },
+        });
+      });
+    </script>
     {% block extra_js %}{% endblock %}
 
   </body>

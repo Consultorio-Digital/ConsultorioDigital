@@ -477,7 +477,7 @@ def panel_doctor(request):
             tab = request.POST.get('tab_activa', 'citas')
             return redirect(f"{request.path}?tab={tab}")
 
-        elif action in ('confirmar', 'completar', 'seguimiento', 'reabrir'):
+        elif action in ('confirmar', 'completar', 'seguimiento', 'reabrir', 'cancelar'):
             reserva_id = request.POST.get('reserva_id')
             try:
                 reserva = Reserva.objects.get(
@@ -487,6 +487,10 @@ def panel_doctor(request):
                 if action == 'confirmar':
                     reserva.estado      = 'confirmada'
                     reserva.profesional = profesional
+                elif action == 'cancelar':
+                    motivo = request.POST.get('motivo_cancelacion', '').strip()
+                    reserva.estado             = 'cancelada'
+                    reserva.motivo_cancelacion = motivo or None
                 elif action == 'completar':
                     reserva.estado       = 'completada'
                     notas = request.POST.get('notas_doctor', '').strip()
@@ -513,6 +517,12 @@ def panel_doctor(request):
     tab_activa           = request.GET.get('tab', 'citas')
     error_disponibilidad = request.session.pop('error_disponibilidad', None)
 
+    # ── Parámetros de filtro del historial ────────────────────────────
+    q_historial     = request.GET.get('q_historial', '').strip()
+    estado_h        = request.GET.get('estado_historial', '')
+    fecha_desde_h   = request.GET.get('fecha_desde_h', '')
+    fecha_hasta_h   = request.GET.get('fecha_hasta_h', '')
+
     # ── Queries según recinto asignado ────────────────────────────────
     reservas_hoy           = []
     reservas_pendientes    = []
@@ -520,6 +530,7 @@ def panel_doctor(request):
     disponibilidades       = []
     page_historial         = None
     disponibilidades_json  = '{}'
+    historial_base_qs      = 'tab=historial'
     total_hoy              = 0
     total_pendientes       = 0
     total_completadas      = 0
@@ -602,6 +613,7 @@ def panel_doctor(request):
 
         # Historial del doctor: citas cerradas en su consultorio
         from django.core.paginator import Paginator as Pag
+        import urllib.parse as _urlparse
         qs_historial = (
             Reserva.objects
             .filter(
@@ -611,9 +623,29 @@ def panel_doctor(request):
             .select_related('paciente__usuario')
             .order_by('-fecha_reserva')
         )
+        if q_historial:
+            qs_historial = qs_historial.filter(
+                Qm(paciente__usuario__nombre__icontains=q_historial) |
+                Qm(paciente__usuario__apellido__icontains=q_historial)
+            )
+        if estado_h:
+            qs_historial = qs_historial.filter(estado=estado_h)
+        if fecha_desde_h:
+            qs_historial = qs_historial.filter(fecha_reserva__date__gte=fecha_desde_h)
+        if fecha_hasta_h:
+            qs_historial = qs_historial.filter(fecha_reserva__date__lte=fecha_hasta_h)
+
         total_historial = qs_historial.count()
-        pag_historial   = Pag(qs_historial, 15)
+        pag_historial   = Pag(qs_historial, 20)
         page_historial  = pag_historial.get_page(request.GET.get('page_h'))
+
+        # Query string base para los links de paginación (preserva filtros activos)
+        _h_params = {'tab': 'historial'}
+        if q_historial:   _h_params['q_historial']     = q_historial
+        if estado_h:      _h_params['estado_historial'] = estado_h
+        if fecha_desde_h: _h_params['fecha_desde_h']   = fecha_desde_h
+        if fecha_hasta_h: _h_params['fecha_hasta_h']   = fecha_hasta_h
+        historial_base_qs = _urlparse.urlencode(_h_params)
 
     horas_disponibles = [
         f"{h:02d}:{m:02d}"
@@ -622,6 +654,19 @@ def panel_doctor(request):
     ]
 
     consultorios = Consultorio.objects.all().order_by('nom_reg', 'nombre')
+
+    import json as _json
+    consultorios_json = _json.dumps([
+        {
+            'id'     : str(c.objectid),
+            'nombre' : c.nombre or '',
+            'c_reg'  : str(c.c_reg),
+            'nom_reg': c.nom_reg or '',
+            'c_com'  : str(c.c_com),
+            'nom_com': c.nom_com or '',
+        }
+        for c in consultorios
+    ])
 
     return render(request, 'panel_doctor.html', {
         'title'               : 'Panel del Doctor',
@@ -641,5 +686,11 @@ def panel_doctor(request):
         'total_sin_gestionar'   : total_sin_gestionar,
         'page_historial'        : page_historial,
         'total_historial'       : total_historial,
+        'q_historial'           : q_historial,
+        'estado_historial'      : estado_h,
+        'fecha_desde_h'         : fecha_desde_h,
+        'fecha_hasta_h'         : fecha_hasta_h,
+        'historial_base_qs'     : historial_base_qs,
         'disponibilidades_json' : disponibilidades_json,
+        'consultorios_json'     : consultorios_json,
     })

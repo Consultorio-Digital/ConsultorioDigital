@@ -83,11 +83,87 @@
   color: white;
 }
 
-/* ── Recinto activo ── */
+/* ── Recinto activo (badge superior) ── */
 .recinto-activo {
   background-color: #E4E2FF;
   border-radius: 12px;
 }
 
+/* ── Lista de recintos custom ── */
+.recinto-lista {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.recinto-item {
+  padding: 14px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f3f5;
+  transition: background 0.1s;
+}
+.recinto-item:last-child { border-bottom: none; }
+
+.recinto-item:hover:not(.activo) { background: #f0f5ff; }
+
+/* Estado activo: fondo azul suave + borde izquierdo */
+.recinto-item.activo {
+  background: #E4E2FF;
+  border-left: 3px solid #0d6efd;
+  padding-left: 13px;
+}
+
+/* Nombre */
+.recinto-item-nombre {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #212529;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recinto-item.activo .recinto-item-nombre {
+  color: #0b5ed7 !important;
+  font-weight: 700;
+}
+
+/* Comuna */
+.recinto-item-comuna {
+  font-size: 0.78rem;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+/* Flecha/check derecho */
+.recinto-item-arrow {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: transparent;
+  transition: color 0.1s;
+}
+.recinto-item:hover:not(.activo) .recinto-item-arrow { color: #adb5bd; }
+.recinto-item.activo .recinto-item-arrow { color: #0d6efd !important; }
+
 .text-cd-blue      { color: #0019BF; }
 .text-cd-blue-dark { color: #020F62; }
+
+/* ── Celdas con texto largo truncado ── */
+.col-truncada {
+  max-width: 200px;
+}
+.col-truncada-sm {
+  max-width: 160px;
+}
+
+/* ── Tooltip de texto largo ── */
+.tooltip-texto-largo .tooltip-inner {
+  max-width: 350px;
+  white-space: normal;
+  word-wrap: break-word;
+  text-align: left;
+  padding: 8px 12px;
+  line-height: 1.45;
+}

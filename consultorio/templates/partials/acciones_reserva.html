@@ -18,15 +18,27 @@
   </form>
 
 {% elif r.estado == 'pendiente' %}
-  <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="confirmar">
-    <input type="hidden" name="reserva_id" value="{{ r.id }}">
-    <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
-    <button type="submit" class="btn btn-completar btn-sm">
-      <i class="bi bi-check-lg me-1"></i>Confirmar
+  <div class="d-flex align-items-center gap-3">
+    <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="confirmar">
+      <input type="hidden" name="reserva_id" value="{{ r.id }}">
+      <input type="hidden" name="tab_activa" value="{{ tab_activa|default:'citas' }}">
+      <button type="submit" class="btn btn-completar btn-sm text-nowrap">
+        <i class="bi bi-check-lg me-1"></i>Confirmar
+      </button>
+    </form>
+    <button type="button"
+      class="btn btn-link btn-sm text-danger p-0 text-decoration-none"
+      data-bs-toggle="modal" data-bs-target="#modal-cancelar-cita"
+      data-reserva-id="{{ r.id }}"
+      data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
+      data-fecha="{{ r.fecha_reserva|date:'d/m/Y' }}"
+      data-hora="{{ r.fecha_reserva|date:'H:i' }}"
+      data-tab="{{ tab_activa|default:'citas' }}">
+      Cancelar
     </button>
-  </form>
+  </div>
 
 {% elif r.estado == 'confirmada' %}
   {% if not es_futura and es_pasada %}
@@ -37,7 +49,18 @@
     data-tab="{{ tab_activa|default:'citas' }}">
     <i class="bi bi-clipboard2-check me-1"></i>Completar
   </button>
-  {% else %}{% endif %}
+  {% else %}
+  <button type="button"
+    class="btn btn-outline-danger btn-sm rounded-pill px-3"
+    data-bs-toggle="modal" data-bs-target="#modal-cancelar-cita"
+    data-reserva-id="{{ r.id }}"
+    data-paciente="{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}"
+    data-fecha="{{ r.fecha_reserva|date:'d/m/Y' }}"
+    data-hora="{{ r.fecha_reserva|date:'H:i' }}"
+    data-tab="{{ tab_activa|default:'citas' }}">
+    <i class="bi bi-x-circle me-1"></i>Cancelar cita
+  </button>
+  {% endif %}
 
 {% elif r.estado == 'completada' %}
   <button type="button" class="btn btn-seguimiento btn-sm me-1"

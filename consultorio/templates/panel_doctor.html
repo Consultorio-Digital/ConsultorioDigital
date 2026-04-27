@@ -5,6 +5,44 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/panel_doctor.css' %}"/>
+  <style>
+    /* ── Calendario de disponibilidad: sin líneas de cuadrícula ── */
+    #cal-tabla th,
+    #cal-tabla td {
+      border: none !important;
+      padding: 6px 4px;
+    }
+    /* Separador horizontal muy sutil entre semanas */
+    #cal-tabla tbody tr + tr td {
+      border-top: 1px solid #f0f0f0 !important;
+    }
+    /* Pill para los días con disponibilidad */
+    #cal-tabla td.bg-primary {
+      border-radius: 10px;
+    }
+
+    /* Hoy: círculo sólido azul sobre el número */
+    .cal-hoy-numero {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #0d6efd;
+      color: #fff !important;
+      font-weight: 700;
+      font-size: 0.875rem;
+      line-height: 1;
+    }
+
+    /* Día seleccionado: anillo exterior sin alterar el relleno interno */
+    #cal-tabla td.cal-seleccionado {
+      outline: 2px solid #0d6efd;
+      outline-offset: -3px;
+      border-radius: 10px;
+    }
+  </style>
 {% endblock %}
 
 {% block navbar %}
@@ -14,6 +52,8 @@
     </li>
   </ul>
 {% endblock %}
+
+{% block navbar_ayuda %}{% endblock %}
 
 {% block content %}
 
@@ -152,7 +192,9 @@
                           <i class="bi bi-person me-1 text-muted"></i>{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
                         </button>
                       </td>
-                      <td>{{ r.motivo }}</td>
+                      <td class="col-truncada">
+                        <div class="text-truncate" title="{{ r.motivo }}">{{ r.motivo }}</div>
+                      </td>
                       <td><i class="bi bi-clock me-1 text-muted"></i>{{ r.fecha_reserva|date:"H:i" }}</td>
                       <td>
                         {% if r.estado == 'confirmada' %}<span class="badge badge-estado bg-confirmado">Confirmada</span>
@@ -209,7 +251,9 @@
                       </td>
                       <td>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
                       <td>{{ r.fecha_reserva|date:"H:i" }}</td>
-                      <td>{{ r.motivo }}</td>
+                      <td class="col-truncada">
+                        <div class="text-truncate" title="{{ r.motivo }}">{{ r.motivo }}</div>
+                      </td>
                       <td class="text-end">
                         <button type="button" class="btn btn-completar btn-sm me-1"
                           data-bs-toggle="modal" data-bs-target="#modal-completar"
@@ -240,8 +284,16 @@
             <p class="text-muted small mb-3">Próximas citas en días con disponibilidad declarada</p>
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
+                <colgroup>
+                  <col style="width:22%">
+                  <col style="width:12%">
+                  <col style="width:8%">
+                  <col style="width:35%">
+                  <col style="width:11%">
+                  <col style="width:12%">
+                </colgroup>
                 <thead class="table-light">
-                  <tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th class="text-end">Acción</th></tr>
+                  <tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr>
                 </thead>
                 <tbody>
                   {% if reservas_pendientes %}
@@ -256,7 +308,9 @@
                       </td>
                       <td>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
                       <td>{{ r.fecha_reserva|date:"H:i" }}</td>
-                      <td>{{ r.motivo }}</td>
+                      <td class="col-truncada">
+                        <div class="text-truncate" title="{{ r.motivo }}">{{ r.motivo }}</div>
+                      </td>
                       <td>
                         {% if r.estado == 'confirmada' %}<span class="badge badge-estado bg-confirmado">Confirmada</span>
                         {% elif r.estado == 'completada' %}<span class="badge badge-estado bg-completada">Completada</span>
@@ -264,11 +318,11 @@
                         {% else %}<span class="badge badge-estado bg-pendiente">Pendiente</span>
                         {% endif %}
                       </td>
-                      <td class="text-end">{% include "partials/acciones_reserva.html" with r=r es_futura=True tab_activa="pendientes" %}</td>
+                      <td>{% include "partials/acciones_reserva.html" with r=r es_futura=True tab_activa="pendientes" %}</td>
                     </tr>
                     {% endfor %}
                   {% else %}
-                    <tr><td colspan="5" class="text-center text-muted py-4">
+                    <tr><td colspan="6" class="text-center text-muted py-4">
                       <i class="bi bi-calendar-x fs-4 d-block mb-2"></i>
                       No hay citas pendientes en tus días de disponibilidad.
                     </td></tr>
@@ -291,17 +345,16 @@
           </div>
           {% endif %}
 
-          {# Toggle calendario #}
-          <div class="mb-3">
-            <button class="btn btn-outline-primary btn-sm rounded-pill px-3"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#cal-collapse"
-              id="btn-toggle-calendario">
-              <i class="bi bi-calendar3 me-1"></i>Ver calendario
+          {# Control segmentado Calendario / Lista #}
+          <div class="btn-group mb-4" role="group" aria-label="Modo de vista">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-vista-cal">
+              <i class="bi bi-calendar3 me-1"></i>Calendario
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" id="btn-vista-lista">
+              <i class="bi bi-list-ul me-1"></i>Lista
             </button>
           </div>
-          <div class="collapse mb-4" id="cal-collapse">
+          <div class="d-none mb-4" id="cal-collapse">
             <div class="card border-0 bg-light rounded-3">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -314,7 +367,7 @@
                   </button>
                 </div>
                 <div class="table-responsive">
-                  <table class="table table-bordered text-center mb-0" style="min-width:420px;">
+                  <table class="table table-borderless text-center mb-0" style="min-width:420px;" id="cal-tabla">
                     <thead class="table-light">
                       <tr>
                         <th class="fw-normal text-muted small py-2">Lun</th>
@@ -330,9 +383,12 @@
                   </table>
                 </div>
                 <div id="cal-detalle" class="mt-3 d-none">
+                  <p class="small mb-2 text-muted">
+                    <i class="bi bi-calendar3 me-1"></i>Detalle de turnos —
+                    <span class="fw-semibold text-dark" id="cal-detalle-fecha"></span>
+                  </p>
                   <div class="card border-0 bg-primary bg-opacity-10 rounded-3">
                     <div class="card-body p-3">
-                      <div class="fw-semibold mb-2" id="cal-detalle-fecha"></div>
                       <div id="cal-detalle-bloques"></div>
                     </div>
                   </div>
@@ -341,7 +397,7 @@
             </div>
           </div>
 
-          <div class="table-responsive">
+          <div class="table-responsive" id="disp-lista">
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
@@ -359,14 +415,16 @@
                     <td>{{ d.hora_inicio|time:"H:i" }}</td>
                     <td>{{ d.hora_fin|time:"H:i" }}</td>
                     <td class="text-end">
-                      <form method="post" action="{% url 'panel_doctor' %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="eliminar_disponibilidad">
-                        <input type="hidden" name="disponibilidad_id" value="{{ d.id }}">
-                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
-                          <i class="bi bi-trash3 me-1"></i>Eliminar
-                        </button>
-                      </form>
+                      <button type="button"
+                        class="btn btn-outline-danger btn-sm rounded-pill px-3"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modal-eliminar-disp"
+                        data-disp-id="{{ d.id }}"
+                        data-disp-fecha="{{ d.fecha|date:'d/m/Y' }}"
+                        data-disp-inicio="{{ d.hora_inicio|time:'H:i' }}"
+                        data-disp-fin="{{ d.hora_fin|time:'H:i' }}">
+                        <i class="bi bi-trash3 me-1"></i>Eliminar
+                      </button>
                     </td>
                   </tr>
                   {% endfor %}
@@ -388,13 +446,64 @@
               <i class="bi bi-building-x fs-3 d-block mb-2"></i>
               Asigna un recinto para ver el historial.
             </div>
-          {% elif not page_historial or not page_historial.object_list %}
-            <div class="text-center text-muted py-5">
-              <i class="bi bi-clock-history fs-2 d-block mb-3 opacity-50"></i>
-              <div class="fw-semibold mb-1">Sin historial aún</div>
-              <div class="small">Las citas completadas, de seguimiento, canceladas y no asistidas aparecerán aquí.</div>
-            </div>
           {% else %}
+
+            {# ── Barra de filtros ── #}
+            <form method="get" action="{% url 'panel_doctor' %}" class="mb-4">
+              <input type="hidden" name="tab" value="historial">
+              <div class="row g-2 align-items-end">
+
+                <div class="col-12 col-md-4">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                      <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q_historial"
+                      class="form-control border-start-0"
+                      placeholder="Buscar por nombre de paciente..."
+                      value="{{ q_historial }}">
+                  </div>
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <select name="estado_historial" class="form-select form-select-sm">
+                    <option value="">Todos los estados</option>
+                    <option value="completada"  {% if estado_historial == 'completada'  %}selected{% endif %}>Completada</option>
+                    <option value="seguimiento" {% if estado_historial == 'seguimiento' %}selected{% endif %}>Seguimiento</option>
+                    <option value="no_asistio"  {% if estado_historial == 'no_asistio'  %}selected{% endif %}>No asistió</option>
+                    <option value="cancelada"   {% if estado_historial == 'cancelada'   %}selected{% endif %}>Cancelada</option>
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <input type="date" name="fecha_desde_h"
+                    class="form-control form-control-sm"
+                    value="{{ fecha_desde_h }}"
+                    placeholder="Desde">
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <input type="date" name="fecha_hasta_h"
+                    class="form-control form-control-sm"
+                    value="{{ fecha_hasta_h }}"
+                    placeholder="Hasta">
+                </div>
+
+                <div class="col-6 col-md-2 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                    <i class="bi bi-funnel me-1"></i>Filtrar
+                  </button>
+                  {% if q_historial or estado_historial or fecha_desde_h or fecha_hasta_h %}
+                    <a href="?tab=historial" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros">
+                      <i class="bi bi-x-lg"></i>
+                    </a>
+                  {% endif %}
+                </div>
+
+              </div>
+            </form>
+
+            {# ── Encabezado con contador ── #}
             <div class="d-flex justify-content-between align-items-center mb-3">
               <p class="text-muted small mb-0">
                 Citas cerradas en <strong>{{ profesional.consultorio.nombre }}</strong>
@@ -404,106 +513,125 @@
               </span>
             </div>
 
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Paciente</th>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Motivo</th>
-                    <th>Estado</th>
-                    <th>Instrucción</th>
-                    <th>Seguimiento</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for r in page_historial %}
-                  <tr>
-                    <td>
-                      <button type="button" class="btn btn-link p-0 text-start btn-historial-paciente"
-                        data-paciente-id="{{ r.paciente.id }}"
-                        data-consultorio-id="{{ profesional.consultorio.objectid }}">
-                        <i class="bi bi-person me-1 text-muted"></i>{{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
-                      </button>
-                    </td>
-                    <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
-                    <td><i class="bi bi-clock me-1 text-muted"></i>{{ r.fecha_reserva|date:"H:i" }}</td>
-                    <td>{{ r.motivo }}</td>
-                    <td>
-                      {% if r.estado == 'completada' %}
-                        <span class="badge badge-estado bg-completada">Completada</span>
-                      {% elif r.estado == 'seguimiento' %}
-                        <span class="badge badge-estado bg-seguimiento">Seguimiento</span>
-                      {% elif r.estado == 'no_asistio' %}
-                        <span class="badge badge-estado bg-no-asistio">No asistió</span>
-                      {% elif r.estado == 'cancelada' %}
-                        <span class="badge badge-estado bg-secondary">Cancelada</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if r.notas_doctor %}
-                        <span class="small fst-italic text-muted">{{ r.notas_doctor }}</span>
-                      {% else %}
-                        <span class="text-muted">—</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if r.fecha_seguimiento %}
-                        <i class="bi bi-calendar-check me-1 text-muted"></i>{{ r.fecha_seguimiento|date:"d/m/Y" }}
-                      {% else %}
-                        <span class="text-muted">—</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-
-            {# Paginación #}
-            {% if page_historial.has_other_pages %}
-              <nav class="mt-4 d-flex justify-content-center" aria-label="Paginación historial">
-                <ul class="pagination pagination-sm mb-0">
-
-                  {% if page_historial.has_previous %}
-                    <li class="page-item">
-                      <a class="page-link" href="?tab=historial&page_h={{ page_historial.previous_page_number }}">
-                        <i class="bi bi-chevron-left"></i>
-                      </a>
-                    </li>
+            {# ── Tabla o vacío ── #}
+            {% if not page_historial.object_list %}
+              <div class="text-center text-muted py-5">
+                <i class="bi bi-clock-history fs-2 d-block mb-3 opacity-50"></i>
+                <div class="fw-semibold mb-1">Sin resultados</div>
+                <div class="small">
+                  {% if q_historial or estado_historial or fecha_desde_h or fecha_hasta_h %}
+                    No hay citas que coincidan con los filtros aplicados.
                   {% else %}
-                    <li class="page-item disabled">
-                      <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                    </li>
+                    Las citas completadas, de seguimiento, canceladas y no asistidas aparecerán aquí.
                   {% endif %}
+                </div>
+              </div>
+            {% else %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th><i class="bi bi-person me-1 text-muted"></i>Paciente</th>
+                      <th><i class="bi bi-calendar3 me-1 text-muted"></i>Fecha</th>
+                      <th><i class="bi bi-clock me-1 text-muted"></i>Hora</th>
+                      <th>Motivo</th>
+                      <th>Estado</th>
+                      <th>Instrucción</th>
+                      <th><i class="bi bi-calendar-check me-1 text-muted"></i>Seguimiento</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in page_historial %}
+                    <tr>
+                      <td>
+                        <button type="button" class="btn btn-link p-0 text-start btn-historial-paciente"
+                          data-paciente-id="{{ r.paciente.id }}"
+                          data-consultorio-id="{{ profesional.consultorio.objectid }}">
+                          {{ r.paciente.usuario.nombre }} {{ r.paciente.usuario.apellido }}
+                        </button>
+                      </td>
+                      <td>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
+                      <td>{{ r.fecha_reserva|date:"H:i" }}</td>
+                      <td class="col-truncada">
+                        <div class="text-truncate" title="{{ r.motivo }}">{{ r.motivo }}</div>
+                      </td>
+                      <td>
+                        {% if r.estado == 'completada' %}
+                          <span class="badge badge-estado bg-completada">Completada</span>
+                        {% elif r.estado == 'seguimiento' %}
+                          <span class="badge badge-estado bg-seguimiento">Seguimiento</span>
+                        {% elif r.estado == 'no_asistio' %}
+                          <span class="badge badge-estado bg-no-asistio">No asistió</span>
+                        {% elif r.estado == 'cancelada' %}
+                          <span class="badge badge-estado bg-secondary">Cancelada</span>
+                        {% endif %}
+                      </td>
+                      <td class="col-truncada-sm">
+                        {% if r.notas_doctor %}
+                          <div class="text-truncate small fst-italic text-muted" title="{{ r.notas_doctor }}">
+                            {{ r.notas_doctor }}
+                          </div>
+                        {% else %}
+                          <span class="text-muted">—</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if r.fecha_seguimiento %}
+                          {{ r.fecha_seguimiento|date:"d/m/Y" }}
+                        {% else %}
+                          <span class="text-muted">—</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
 
-                  {% for num in page_historial.paginator.page_range %}
-                    {% if page_historial.number == num %}
-                      <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                    {% elif num > page_historial.number|add:"-3" and num < page_historial.number|add:"3" %}
+              {# ── Paginación (preserva filtros activos) ── #}
+              {% if page_historial.has_other_pages %}
+                <nav class="mt-4 d-flex justify-content-center" aria-label="Paginación historial">
+                  <ul class="pagination pagination-sm mb-0">
+
+                    {% if page_historial.has_previous %}
                       <li class="page-item">
-                        <a class="page-link" href="?tab=historial&page_h={{ num }}">{{ num }}</a>
+                        <a class="page-link" href="?{{ historial_base_qs }}&page_h={{ page_historial.previous_page_number }}">
+                          <i class="bi bi-chevron-left"></i>
+                        </a>
+                      </li>
+                    {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
                       </li>
                     {% endif %}
-                  {% endfor %}
 
-                  {% if page_historial.has_next %}
-                    <li class="page-item">
-                      <a class="page-link" href="?tab=historial&page_h={{ page_historial.next_page_number }}">
-                        <i class="bi bi-chevron-right"></i>
-                      </a>
-                    </li>
-                  {% else %}
-                    <li class="page-item disabled">
-                      <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-                    </li>
-                  {% endif %}
+                    {% for num in page_historial.paginator.page_range %}
+                      {% if page_historial.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                      {% elif num > page_historial.number|add:"-3" and num < page_historial.number|add:"3" %}
+                        <li class="page-item">
+                          <a class="page-link" href="?{{ historial_base_qs }}&page_h={{ num }}">{{ num }}</a>
+                        </li>
+                      {% endif %}
+                    {% endfor %}
 
-                </ul>
-              </nav>
+                    {% if page_historial.has_next %}
+                      <li class="page-item">
+                        <a class="page-link" href="?{{ historial_base_qs }}&page_h={{ page_historial.next_page_number }}">
+                          <i class="bi bi-chevron-right"></i>
+                        </a>
+                      </li>
+                    {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                      </li>
+                    {% endif %}
+
+                  </ul>
+                </nav>
+              {% endif %}
+
             {% endif %}
-
           {% endif %}
         </div>
 
@@ -524,25 +652,71 @@
                     </span>
                   </div>
 
-                  <form method="post" action="{% url 'panel_doctor' %}">
+                  <form id="form-recinto" method="post" action="{% url 'panel_doctor' %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="recinto">
-                    <div class="mb-2">
-                      <input type="text" id="filtro-recinto" class="form-control reserva-input mb-2"
-                        placeholder="Buscar recinto..." autocomplete="off">
-                      <select id="recinto" name="recinto" class="form-select reserva-input" size="6" style="height:auto;">
-                        <option value="">— Seleccionar —</option>
-                        {% for c in consultorios %}
-                          <option value="{{ c.objectid }}"
-                            {% if profesional.consultorio.objectid == c.objectid %}selected{% endif %}>
-                            {{ c.nombre }} · {{ c.nom_com }}
-                          </option>
-                        {% endfor %}
-                      </select>
+                    <input type="hidden" name="recinto" id="recinto-val"
+                      value="{{ profesional.consultorio.objectid|default:'' }}">
+
+                    {# Buscador principal #}
+                    <div class="mb-3">
+                      <label class="form-label reserva-label">Buscar recinto</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                          <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="buscar-recinto"
+                          class="form-control border-start-0 ps-1"
+                          placeholder="Escribir nombre del recinto..."
+                          autocomplete="off">
+                      </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 reserva-btn mt-2">
-                      Guardar recinto
-                    </button>
+
+                    {# Filtros opcionales en la misma fila #}
+                    <div class="row g-2 mb-3">
+                      <div class="col-6">
+                        <select id="sel-region" class="form-select form-select-sm">
+                          <option value="">Región (opcional)</option>
+                        </select>
+                      </div>
+                      <div class="col-6">
+                        <select id="sel-comuna" class="form-select form-select-sm" disabled>
+                          <option value="">Comuna (opcional)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {# Placeholder inicial #}
+                    <div id="recintos-placeholder" class="text-center text-muted small py-3">
+                      <i class="bi bi-search d-block fs-4 mb-1 opacity-50"></i>
+                      Escribe al menos 2 letras o selecciona una región para ver recintos.
+                    </div>
+
+                    {# Resultados #}
+                    <div id="recintos-resultados-wrap" class="d-none mb-1">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-light" id="recintos-contador"></span>
+                      </div>
+                      <div id="lista-recintos" class="recinto-lista" style="max-height:300px;overflow-y:auto;"></div>
+                    </div>
+
+                    {# Sin resultados #}
+                    <div id="recinto-ninguno" class="text-center text-muted small py-3 d-none">
+                      <i class="bi bi-x-circle d-block fs-4 mb-1 opacity-50"></i>
+                      Sin resultados para tu búsqueda.
+                    </div>
+
+                    {# Confirmación (aparece al seleccionar un recinto distinto) #}
+                    <div id="recinto-confirmar" class="d-none mt-3 p-3 rounded-3 border border-primary bg-primary bg-opacity-10">
+                      <div class="small text-primary mb-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Recinto seleccionado:
+                        <strong id="recinto-confirmar-nombre"></strong>
+                      </div>
+                      <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-building-check me-1"></i>Confirmar cambio de recinto
+                      </button>
+                    </div>
                   </form>
                 </div>
               </div>
@@ -552,7 +726,21 @@
               <div class="card border-0 shadow-sm rounded-3 h-100">
                 <div class="card-body p-4">
                   <h5 class="fw-light mb-1">Agregar disponibilidad</h5>
-                  <p class="text-muted small mb-4">Define tus horarios de atención</p>
+                  <p class="text-muted small mb-3">Define tus horarios de atención</p>
+
+                  {% if profesional.consultorio %}
+                    <div class="d-flex align-items-center gap-2 mb-4 px-3 py-2 rounded-3" style="background:#f0f5ff;">
+                      <i class="bi bi-building text-primary small"></i>
+                      <span class="small text-muted">Definiendo horarios para:
+                        <strong class="text-primary">{{ profesional.consultorio.nombre }}</strong>
+                      </span>
+                    </div>
+                  {% else %}
+                    <div class="d-flex align-items-center gap-2 mb-4 px-3 py-2 rounded-3" style="background:#fff8ec;">
+                      <i class="bi bi-exclamation-circle text-warning small"></i>
+                      <span class="small text-muted">Asigna un recinto primero para poder agregar disponibilidad.</span>
+                    </div>
+                  {% endif %}
 
                   <form method="post" action="{% url 'panel_doctor' %}">
                     {% csrf_token %}
@@ -623,7 +811,7 @@
             Historial de citas en este consultorio
             <span class="badge bg-light text-muted ms-1" id="historial-total"></span>
           </p>
-          <div id="historial-cuerpo">
+          <div id="historial-cuerpo" style="max-height:420px;overflow-y:auto;">
             <div class="text-center py-4 text-muted">
               <div class="spinner-border spinner-border-sm me-2" role="status"></div>
               Cargando...
@@ -727,6 +915,101 @@
   </div>
 </div>
 
+{# ── Modal: Cancelar cita (acción del doctor) ── #}
+<div class="modal fade" id="modal-cancelar-cita" tabindex="-1" aria-labelledby="modalCancelarCitaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-light" id="modalCancelarCitaLabel">
+          <i class="bi bi-x-circle text-danger me-2"></i>Cancelar cita
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form method="post" action="{% url 'panel_doctor' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="cancelar">
+        <input type="hidden" name="reserva_id" id="cancelar-reserva-id">
+        <input type="hidden" name="tab_activa" id="cancelar-tab">
+        <div class="modal-body pt-2">
+
+          <div class="rounded-3 px-3 py-2 mb-3 d-flex align-items-center gap-3" style="background:#fff4f4;">
+            <i class="bi bi-person text-danger fs-5"></i>
+            <div>
+              <div class="fw-semibold text-danger small" id="cancelar-paciente"></div>
+              <div class="small text-muted" id="cancelar-fecha-hora"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="cancelar-motivo">
+              Motivo de cancelación <span class="text-danger">*</span>
+            </label>
+            <select id="cancelar-motivo" name="motivo_cancelacion" class="form-select" required>
+              <option value="">Seleccionar motivo…</option>
+              <option value="Aviso del paciente">Aviso del paciente</option>
+              <option value="Licencia del profesional">Licencia del profesional</option>
+              <option value="Urgencia médica">Urgencia médica</option>
+              <option value="Reagendamiento solicitado">Reagendamiento solicitado</option>
+              <option value="Error de agendamiento">Error de agendamiento</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+
+          <p class="small text-muted mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            El motivo quedará registrado para reportes de gestión. El paciente no recibe notificación automática.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Volver</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-x-circle me-1"></i>Sí, cancelar cita
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ── Modal: Confirmar eliminación de disponibilidad ── #}
+<div class="modal fade" id="modal-eliminar-disp" tabindex="-1" aria-labelledby="modalEliminarDispLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-light" id="modalEliminarDispLabel">
+          <i class="bi bi-trash3 text-danger me-2"></i>Eliminar bloque de atención
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form method="post" action="{% url 'panel_doctor' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="eliminar_disponibilidad">
+        <input type="hidden" name="disponibilidad_id" id="eliminar-disp-id">
+        <div class="modal-body pt-2 pb-1">
+          <p class="mb-1">¿Estás seguro de que deseas eliminar este bloque de atención?</p>
+          <div class="rounded-3 px-3 py-2 mt-3 d-flex align-items-center gap-3" style="background:#fff4f4;">
+            <i class="bi bi-clock text-danger fs-5"></i>
+            <div>
+              <div class="fw-semibold text-danger" id="eliminar-disp-horario"></div>
+              <div class="small text-muted" id="eliminar-disp-fecha"></div>
+            </div>
+          </div>
+          <p class="small text-muted mt-3 mb-0">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            Esta acción no se puede deshacer. Las citas ya agendadas en este horario no se cancelan automáticamente.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash3 me-1"></i>Sí, eliminar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -771,18 +1054,19 @@
           const hoy  = new Date();
           const esHoy = (dia === hoy.getDate() && calMes === hoy.getMonth() && calAnio === hoy.getFullYear());
 
-          td.innerHTML = `<span class="fw-semibold${esHoy ? ' text-primary' : ''}">${dia}</span>`;
+          const numSpan = esHoy
+            ? `<span class="cal-hoy-numero">${dia}</span>`
+            : `<span class="fw-semibold">${dia}</span>`;
+          td.innerHTML = numSpan;
 
           if (DISP[key]) {
             const n = DISP[key].length;
-            td.classList.add('bg-primary', 'bg-opacity-10');
+            const isSeleccionado = diaSeleccionado === key;
+            td.classList.add('bg-primary', isSeleccionado ? 'bg-opacity-25' : 'bg-opacity-10');
+            if (isSeleccionado) td.classList.add('cal-seleccionado');
             td.style.cursor = 'pointer';
-            td.innerHTML += `<br><small class="text-primary">${n} bloque${n > 1 ? 's' : ''}</small>`;
+            td.innerHTML += `<br><small class="text-primary fw-semibold">${n} bloque${n > 1 ? 's' : ''}</small>`;
             td.dataset.fecha = key;
-
-            if (diaSeleccionado === key) {
-              td.classList.add('border', 'border-primary', 'border-2');
-            }
 
             td.addEventListener('click', function () {
               diaSeleccionado = this.dataset.fecha;
@@ -798,12 +1082,17 @@
     }
   }
 
+  const DIAS_NOMBRE = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
   function mostrarDetalle(key) {
     const bloques = DISP[key];
     const detalle = document.getElementById('cal-detalle');
     const [anio, mes, dia] = key.split('-');
-    document.getElementById('cal-detalle-fecha').innerHTML =
-      `<i class="bi bi-calendar3 me-2 text-primary"></i>${dia}/${mes}/${anio}`;
+    const fechaObj   = new Date(+anio, +mes - 1, +dia);
+    const diaNombre  = DIAS_NOMBRE[fechaObj.getDay()];
+    const mesNombre  = MESES[+mes - 1].toLowerCase();
+    document.getElementById('cal-detalle-fecha').textContent =
+      `${diaNombre} ${+dia} de ${mesNombre}`;
 
     let html = '<div class="d-flex flex-wrap gap-2">';
     bloques.forEach(b => {
@@ -832,18 +1121,200 @@
     renderCalendario();
   });
 
-  // Renderizar al abrir el collapse
-  document.getElementById('cal-collapse').addEventListener('shown.bs.collapse', renderCalendario);
+  // ── Control segmentado Calendario / Lista ──
+  const btnVistaCal   = document.getElementById('btn-vista-cal');
+  const btnVistaLista = document.getElementById('btn-vista-lista');
+  const calWrap       = document.getElementById('cal-collapse');
+  const listaWrap     = document.getElementById('disp-lista');
 
-  // ── Filtro de texto para el select de recintos ──
-  const filtro = document.getElementById('filtro-recinto');
-  const selectRecinto = document.getElementById('recinto');
-  filtro.addEventListener('input', function () {
-    const q = this.value.toLowerCase();
-    Array.from(selectRecinto.options).forEach(opt => {
-      opt.style.display = opt.value === '' || opt.text.toLowerCase().includes(q) ? '' : 'none';
-    });
+  btnVistaCal.addEventListener('click', function () {
+    calWrap.classList.remove('d-none');
+    listaWrap.classList.add('d-none');
+    btnVistaCal.classList.replace('btn-outline-primary', 'btn-primary');
+    btnVistaLista.classList.replace('btn-primary', 'btn-outline-primary');
+    renderCalendario();
   });
+
+  btnVistaLista.addEventListener('click', function () {
+    listaWrap.classList.remove('d-none');
+    calWrap.classList.add('d-none');
+    btnVistaLista.classList.replace('btn-outline-primary', 'btn-primary');
+    btnVistaCal.classList.replace('btn-primary', 'btn-outline-primary');
+  });
+
+  // ── Selector de recintos: búsqueda + filtros opcionales ──
+  const CONSULTORIOS       = {{ consultorios_json|safe }};
+  const selRegion          = document.getElementById('sel-region');
+  const selComuna          = document.getElementById('sel-comuna');
+  const buscarRecinto      = document.getElementById('buscar-recinto');
+  const listaRecintos      = document.getElementById('lista-recintos');
+  const recintoVal         = document.getElementById('recinto-val');
+  const formRecinto        = document.getElementById('form-recinto');
+  const recintoNinguno     = document.getElementById('recinto-ninguno');
+  const recintoPlaceholder = document.getElementById('recintos-placeholder');
+  const resultadosWrap     = document.getElementById('recintos-resultados-wrap');
+  const recintoContador    = document.getElementById('recintos-contador');
+
+  // Poblar regiones (ordenadas alfabéticamente)
+  const regionesMap = {};
+  CONSULTORIOS.forEach(c => { if (!regionesMap[c.c_reg]) regionesMap[c.c_reg] = c.nom_reg; });
+  Object.entries(regionesMap)
+    .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+    .forEach(([code, nombre]) => {
+      const o = document.createElement('option');
+      o.value = code; o.textContent = nombre;
+      selRegion.appendChild(o);
+    });
+
+  // Al cambiar región → poblar comunas y re-filtrar
+  selRegion.addEventListener('change', function () {
+    const reg = this.value;
+    selComuna.innerHTML = '<option value="">Comuna (opcional)</option>';
+    selComuna.disabled = !reg;
+    if (reg) {
+      const comunasMap = {};
+      CONSULTORIOS.filter(c => c.c_reg === reg).forEach(c => {
+        if (!comunasMap[c.c_com]) comunasMap[c.c_com] = c.nom_com;
+      });
+      Object.entries(comunasMap)
+        .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+        .forEach(([code, nombre]) => {
+          const o = document.createElement('option');
+          o.value = code; o.textContent = nombre;
+          selComuna.appendChild(o);
+        });
+    }
+    aplicarFiltros();
+  });
+
+  selComuna.addEventListener('change', aplicarFiltros);
+  buscarRecinto.addEventListener('input', aplicarFiltros);
+
+  function aplicarFiltros() {
+    const q   = buscarRecinto.value.toLowerCase().trim();
+    const reg = selRegion.value;
+    const com = selComuna.value;
+    const hayFiltro = q.length >= 2 || reg || com;
+
+    if (!hayFiltro) {
+      recintoPlaceholder.classList.remove('d-none');
+      resultadosWrap.classList.add('d-none');
+      recintoNinguno.classList.add('d-none');
+      return;
+    }
+
+    let items = CONSULTORIOS.slice();
+    if (reg) items = items.filter(c => c.c_reg === reg);
+    if (com) items = items.filter(c => c.c_com === com);
+    if (q.length >= 2) items = items.filter(c =>
+      c.nombre.toLowerCase().includes(q) || c.nom_com.toLowerCase().includes(q));
+    items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+    recintoPlaceholder.classList.add('d-none');
+
+    if (items.length === 0) {
+      resultadosWrap.classList.add('d-none');
+      recintoNinguno.classList.remove('d-none');
+      return;
+    }
+
+    recintoNinguno.classList.add('d-none');
+    resultadosWrap.classList.remove('d-none');
+    recintoContador.textContent = `${items.length} recinto${items.length !== 1 ? 's' : ''}`;
+
+    // Si ya filtramos por comuna, omitir etiqueta (info redundante)
+    const mostrarComuna = !com;
+
+    listaRecintos.innerHTML = '';
+    items.forEach(c => {
+      const isActivo = c.id === recintoVal.value;
+      const div = document.createElement('div');
+      div.className = 'recinto-item d-flex align-items-center gap-2' + (isActivo ? ' activo' : '');
+      div.dataset.id = c.id;
+
+      // Estilos inline para el estado activo (garantizan visibilidad sin depender del CSS externo)
+      if (isActivo) {
+        div.style.background    = '#E4E2FF';
+        div.style.borderLeft    = '3px solid #0d6efd';
+        div.style.paddingLeft   = '13px';
+      }
+
+      const nombreStyle = isActivo
+        ? 'style="font-weight:700;color:#212529;"'
+        : '';
+      const arrowStyle = isActivo
+        ? 'style="color:#0d6efd;flex-shrink:0;"'
+        : 'class="recinto-item-arrow bi bi-chevron-right"';
+
+      div.innerHTML =
+        `<div style="flex:1;min-width:0">` +
+          `<div class="recinto-item-nombre" ${nombreStyle}>${c.nombre}</div>` +
+          (mostrarComuna
+            ? `<div class="recinto-item-comuna"><i class="bi bi-geo-alt me-1"></i>${c.nom_com}</div>`
+            : '') +
+        `</div>` +
+        (isActivo
+          ? `<i class="bi bi-check-circle-fill" ${arrowStyle}></i>`
+          : `<i ${arrowStyle}></i>`);
+      listaRecintos.appendChild(div);
+    });
+
+    const act = listaRecintos.querySelector('.recinto-item.activo');
+    if (act) act.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Clic en un ítem → marcar como pendiente y mostrar confirmación
+  const confirmarWrap  = document.getElementById('recinto-confirmar');
+  const confirmarNombre = document.getElementById('recinto-confirmar-nombre');
+  const recintoOriginal = recintoVal.value; // id del recinto actual al cargar
+
+  listaRecintos.addEventListener('click', function (e) {
+    const item = e.target.closest('.recinto-item');
+    if (!item) return;
+
+    const nuevoId     = item.dataset.id;
+    const nuevoNombre = item.querySelector('.recinto-item-nombre').textContent;
+
+    // Actualizar valor pendiente
+    recintoVal.value = nuevoId;
+
+    // Re-renderizar para reflejar la selección visual
+    aplicarFiltros();
+
+    // Mostrar u ocultar confirmación según si cambió respecto al original
+    if (nuevoId !== recintoOriginal) {
+      confirmarNombre.textContent = nuevoNombre;
+      confirmarWrap.classList.remove('d-none');
+    } else {
+      confirmarWrap.classList.add('d-none');
+    }
+  });
+
+  // Pre-seleccionar si el doctor ya tiene recinto asignado
+  (function preseleccionar() {
+    const idActual = recintoVal.value;
+    if (!idActual) return;
+    const actual = CONSULTORIOS.find(c => c.id === idActual);
+    if (!actual) return;
+
+    selRegion.value = actual.c_reg;
+    selRegion.dispatchEvent(new Event('change'));
+    setTimeout(function () {
+      selComuna.value = actual.c_com;
+      aplicarFiltros();
+    }, 0);
+  })();
+
+  // ── Formateador de RUT chileno (XXXXXXXX-X → XX.XXX.XXX-X) ──
+  function formatearRut(rut) {
+    if (!rut) return '';
+    const clean = String(rut).replace(/[.\-]/g, '').trim();
+    if (clean.length < 2) return rut;
+    const cuerpo = clean.slice(0, -1);
+    const dv     = clean.slice(-1).toUpperCase();
+    const formateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${formateado}-${dv}`;
+  }
 
   // ── Modal Historial paciente ──
   const ESTADO_LABELS = {
@@ -852,6 +1323,7 @@
     completada : '<span class="badge badge-estado bg-completada">Completada</span>',
     seguimiento: '<span class="badge badge-estado bg-seguimiento">Seguimiento</span>',
     cancelada  : '<span class="badge badge-estado bg-secondary">Cancelada</span>',
+    no_asistio : '<span class="badge badge-estado bg-no-asistio">No asistió</span>',
   };
 
   document.addEventListener('click', function (e) {
@@ -878,7 +1350,7 @@
       .then(r => r.json())
       .then(data => {
         document.getElementById('historial-nombre').textContent  = data.nombre;
-        document.getElementById('historial-rut').textContent     = data.rut;
+        document.getElementById('historial-rut').textContent     = formatearRut(data.rut);
         document.getElementById('historial-correo').textContent  = data.correo;
         document.getElementById('historial-total').textContent   = `${data.citas.length} cita${data.citas.length !== 1 ? 's' : ''}`;
 
@@ -893,11 +1365,20 @@
           return;
         }
 
-        let html = '<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Motivo</th><th>Estado</th><th>Instrucción</th></tr></thead><tbody>';
+        let html = '<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0">' +
+          '<colgroup>' +
+            '<col style="width:13%">' +
+            '<col style="width:26%">' +
+            '<col style="width:22%">' +
+            '<col style="width:39%">' +
+          '</colgroup>' +
+          '<thead class="table-light"><tr><th>Fecha</th><th>Motivo</th><th>Estado</th><th>Instrucción</th></tr></thead><tbody>';
         data.citas.forEach(c => {
-          const seguimiento = c.seguimiento ? `<br><small class="text-muted"><i class="bi bi-calendar-check me-1"></i>Seguimiento: ${c.seguimiento}</small>` : '';
+          const seguimiento = c.seguimiento
+            ? `<span class="d-block mt-2 text-muted small"><i class="bi bi-calendar-check me-1"></i>Seguimiento: ${c.seguimiento}</span>`
+            : '';
           const instruccion = c.instruccion
-            ? `<span class="fst-italic text-muted small">${c.instruccion}</span>`
+            ? `<div style="max-height:72px;overflow-y:auto;" class="fst-italic text-muted small pe-1">${c.instruccion}</div>`
             : '<span class="text-muted">—</span>';
           html += `<tr>
             <td class="small">${c.fecha}</td>
@@ -913,6 +1394,24 @@
         document.getElementById('historial-cuerpo').innerHTML =
           '<p class="text-danger text-center py-3">Error al cargar el historial.</p>';
       });
+  });
+
+  // Poblar modal Cancelar cita
+  document.getElementById('modal-cancelar-cita').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('cancelar-reserva-id').value      = btn.dataset.reservaId;
+    document.getElementById('cancelar-tab').value             = btn.dataset.tab || 'pendientes';
+    document.getElementById('cancelar-paciente').textContent  = btn.dataset.paciente;
+    document.getElementById('cancelar-fecha-hora').textContent = `${btn.dataset.fecha} · ${btn.dataset.hora}`;
+    document.getElementById('cancelar-motivo').value          = '';
+  });
+
+  // Poblar modal Eliminar disponibilidad
+  document.getElementById('modal-eliminar-disp').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('eliminar-disp-id').value          = btn.dataset.dispId;
+    document.getElementById('eliminar-disp-horario').textContent = `${btn.dataset.dispInicio} – ${btn.dataset.dispFin}`;
+    document.getElementById('eliminar-disp-fecha').textContent  = btn.dataset.dispFecha;
   });
 
   // Poblar modal Completar
@@ -932,6 +1431,15 @@
     document.getElementById('seguimiento-notas').value          = btn.dataset.notas || '';
     document.getElementById('seguimiento-fecha').value          = '';
     document.getElementById('seguimiento-tab').value            = btn.dataset.tab || 'citas';
+  });
+
+  // ── Tooltips con salto de línea para celdas truncadas ──
+  document.querySelectorAll('.text-truncate[title]').forEach(function (el) {
+    new bootstrap.Tooltip(el, {
+      placement  : 'top',
+      customClass: 'tooltip-texto-largo',
+      trigger    : 'hover',
+    });
   });
 </script>
 {% endblock %}
