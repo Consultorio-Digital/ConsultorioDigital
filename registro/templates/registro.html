@@ -70,12 +70,39 @@
 
 {% block extra_js %}
 <script>
-  const tipo = document.getElementById('id_tipo');
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Toggle especialidad ──────────────────────────────────────────────
+  const tipo   = document.getElementById('id_tipo');
   const divEsp = document.getElementById('div-especialidad');
-  function toggleEspecialidad() {
-    divEsp.style.display = tipo.value === 'profesional' ? '' : 'none';
+  if (tipo && divEsp) {
+    function toggleEspecialidad() {
+      divEsp.style.display = tipo.value === 'profesional' ? '' : 'none';
+    }
+    toggleEspecialidad();
+    tipo.addEventListener('change', toggleEspecialidad);
   }
-  toggleEspecialidad();
-  tipo.addEventListener('change', toggleEspecialidad);
+
+  // ── Auto-formato fecha de nacimiento (DD / MM / AAAA) ────────────────
+  const bdInput = document.getElementById('id_birthdate')
+               || document.querySelector('input[name="birthdate"]');
+
+  function formatearFecha(raw) {
+    const digits = raw.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return digits.slice(0, 2) + ' / ' + digits.slice(2);
+    return digits.slice(0, 2) + ' / ' + digits.slice(2, 4) + ' / ' + digits.slice(4);
+  }
+
+  if (bdInput) {
+    ['input', 'change'].forEach(function (evt) {
+      bdInput.addEventListener(evt, function () {
+        const formatted = formatearFecha(this.value);
+        if (this.value !== formatted) this.value = formatted;
+      });
+    });
+  }
+
+});
 </script>
 {% endblock %}

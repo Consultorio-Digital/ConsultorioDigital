@@ -95,7 +95,11 @@ class RegisterForm(UserCreationForm):
     last_name       = forms.CharField(max_length=80, required=False)
     address         = forms.CharField(max_length=255, required=False)
     phone           = forms.CharField(max_length=15, required=False)
-    birthdate       = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    birthdate       = forms.DateField(
+                        required=False,
+                        input_formats=['%d / %m / %Y', '%d/%m/%Y', '%Y-%m-%d'],
+                        widget=forms.TextInput(),
+                    )
     tipo            = forms.ChoiceField(choices=TIPO_CHOICES, initial='paciente')
     especialidad    = forms.CharField(max_length=255, required=False)
     usable_password = None
@@ -114,27 +118,30 @@ class RegisterForm(UserCreationForm):
         self.fields["password1"].label  = "Contraseña"
         self.fields["password2"].label  = "Confirmar contraseña"
         
-        # Change help texts
-        self.fields["username"].help_text   = "Ingrese su RUT (en un formato válido)"
-        self.fields["email"].help_text      = "Ingrese un correo válido"
-        self.fields["first_name"].help_text = "Ingrese su nombre"
-        self.fields["last_name"].help_text  = "Ingrese su apellido"
-        self.fields["address"].help_text    = "Ingrese su dirección"
-        self.fields["phone"].help_text      = "Ingrese su teléfono"
-        self.fields["birthdate"].help_text  = "Ingrese su fecha de nacimiento"
-        self.fields["password1"].help_text  = "Ingrese una contraseña segura: al menos 8 caracteres, no común y no solo numérica"
-        self.fields["password2"].help_text  = "Repita la contraseña"
-        
-        # Change placeholders
-        self.fields["username"].widget.attrs["placeholder"]   = "RUT"
-        self.fields["email"].widget.attrs["placeholder"]      = "Correo"
-        self.fields["first_name"].widget.attrs["placeholder"] = "Nombre"
-        self.fields["last_name"].widget.attrs["placeholder"]  = "Apellido"
-        self.fields["address"].widget.attrs["placeholder"]    = "Dirección"
-        self.fields["phone"].widget.attrs["placeholder"]      = "Teléfono"
-        self.fields["birthdate"].widget.attrs["placeholder"]  = "Fecha de Nacimiento"
-        self.fields["password1"].widget.attrs["placeholder"]  = "Contraseña"
-        self.fields["password2"].widget.attrs["placeholder"]  = "Confirmar contraseña"
+        # Help texts: solo donde hay una regla real que comunicar
+        self.fields["username"].help_text   = "Ej: 12.345.678-9"
+        self.fields["email"].help_text      = ""
+        self.fields["first_name"].help_text = ""
+        self.fields["last_name"].help_text  = ""
+        self.fields["address"].help_text    = ""
+        self.fields["phone"].help_text      = ""
+        self.fields["birthdate"].help_text  = ""
+        self.fields["password1"].help_text  = "Mínimo 8 caracteres, sin secuencias obvias ni solo números"
+        self.fields["password2"].help_text  = ""
+
+        # Placeholders: ejemplos concretos, no repetir el label
+        self.fields["username"].widget.attrs["placeholder"]   = "12.345.678-9"
+        self.fields["email"].widget.attrs["placeholder"]      = "ejemplo@correo.com"
+        self.fields["first_name"].widget.attrs["placeholder"] = "María"
+        self.fields["last_name"].widget.attrs["placeholder"]  = "González"
+        self.fields["address"].widget.attrs["placeholder"]    = "Av. Principal 123, Santiago"
+        self.fields["phone"].widget.attrs["placeholder"]      = "+56 9 1234 5678"
+        self.fields["birthdate"].widget.attrs["placeholder"]   = "DD / MM / AAAA"
+        self.fields["birthdate"].widget.attrs["maxlength"]     = "14"
+        self.fields["birthdate"].widget.attrs["inputmode"]     = "numeric"
+        self.fields["birthdate"].widget.attrs["autocomplete"]  = "bday"
+        self.fields["password1"].widget.attrs["placeholder"]  = "Mínimo 8 caracteres"
+        self.fields["password2"].widget.attrs["placeholder"]  = "Repite tu contraseña"
         
         # Change error messages
         self.fields["username"].error_messages = {
@@ -189,7 +196,6 @@ class RegisterForm(UserCreationForm):
             Field('phone',      css_class='login-input'),
             Field('birthdate',  css_class='login-input'),
             Field('password1',  css_class='login-input'),
-            HTML('<p class="text-muted small mb-2">Mínimo 8 caracteres</p>'),
             Field('password2',  css_class='login-input'),
         )
 
