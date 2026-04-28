@@ -88,17 +88,25 @@
 
         {# Tabla de citas #}
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover align-middle mb-0" style="table-layout:fixed;width:100%;min-width:740px;">
+            <colgroup>
+              <col style="width:115px">
+              <col style="width:125px">
+              <col style="width:130px">
+              <col style="width:110px">
+              <col style="width:90px">
+              <col style="width:155px">
+              <col style="width:115px">
+            </colgroup>
             <thead class="table-light">
               <tr>
-                <th class="fw-bold">Consultorio</th>
-                <th class="fw-bold">Doctor</th>
-                <th class="fw-bold">Fecha</th>
-                <th class="fw-bold">Hora</th>
-                <th class="fw-bold">Motivo</th>
-                <th class="fw-bold">Ubicación</th>
-                <th class="fw-bold">Estado</th>
-                <th class="fw-bold">Seguimiento</th>
+                <th class="fw-bold text-nowrap">Consultorio</th>
+                <th class="fw-bold text-nowrap">Doctor</th>
+                <th class="fw-bold text-nowrap">Fecha y hora</th>
+                <th class="fw-bold text-nowrap">Motivo</th>
+                <th class="fw-bold text-nowrap">Ubicación</th>
+                <th class="fw-bold text-nowrap">Estado</th>
+                <th class="fw-bold text-nowrap">Seguimiento</th>
               </tr>
             </thead>
             <tbody>
@@ -120,14 +128,12 @@
                       {% endif %}
                     </td>
                     <td>
-                      <i class="bi bi-calendar3 me-1 text-muted"></i>
-                      {{ reserva.fecha_reserva|date:"d-m-Y" }}
+                      <div class="text-nowrap"><i class="bi bi-calendar3 me-1 text-muted"></i>{{ reserva.fecha_reserva|date:"d-m-Y" }}</div>
+                      <div class="text-nowrap small text-muted"><i class="bi bi-clock me-1"></i>{{ reserva.fecha_reserva|date:"H:i" }}</div>
                     </td>
                     <td>
-                      <i class="bi bi-clock me-1 text-muted"></i>
-                      {{ reserva.fecha_reserva|date:"H:i" }}
+                      <div class="col-instruccion" title="{{ reserva.motivo }}">{{ reserva.motivo }}</div>
                     </td>
-                    <td>{{ reserva.motivo }}</td>
                     <td>
                       <a href="https://www.google.com/maps?q={{ reserva.consultorio.latitud }},{{ reserva.consultorio.longitud }}"
                          target="_blank"
@@ -136,7 +142,7 @@
                         {{ reserva.consultorio.direccion }}
                       </a>
                     </td>
-                    <td>
+                    <td class="td-estado">
                       {% if reserva.estado == "confirmada" %}
                         <span class="badge badge-estado bg-confirmado">Confirmada</span>
                       {% elif reserva.estado == "pendiente" %}
@@ -153,7 +159,8 @@
                         <span class="badge badge-estado bg-secondary">{{ reserva.estado }}</span>
                       {% endif %}
                       {% if reserva.notas_doctor %}
-                        <div class="small text-muted mt-1 fst-italic">
+                        <div class="col-instruccion small text-muted fst-italic mt-1"
+                             title="{{ reserva.notas_doctor }}">
                           <i class="bi bi-info-circle me-1"></i>{{ reserva.notas_doctor }}
                         </div>
                       {% endif %}
@@ -170,7 +177,7 @@
                 {% endfor %}
               {% else %}
                 <tr>
-                  <td colspan="8" class="text-center text-muted py-5">
+                  <td colspan="7" class="text-center text-muted py-5">
                     <i class="bi bi-calendar-check fs-2 d-block mb-3 text-primary opacity-50"></i>
                     <div class="fw-semibold mb-1">No tienes citas próximas</div>
                     <div class="small mb-3">Agenda una cita con tu médico cuando la necesites</div>
@@ -252,4 +259,16 @@
     </div>
   {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('.col-instruccion[title]').forEach(function (el) {
+    new bootstrap.Tooltip(el, {
+      placement  : 'top',
+      customClass: 'tooltip-texto-largo',
+      trigger    : 'hover',
+    });
+  });
+</script>
 {% endblock %}

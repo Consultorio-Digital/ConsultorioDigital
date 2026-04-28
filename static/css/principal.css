@@ -66,6 +66,30 @@ body {
 .bg-cancelada   { background-color: #6c757d !important; color: #fff !important; }
 .bg-no-asistio  { background-color: #E74C3C !important; color: #fff !important; }
 
+/* ── Truncado con tooltip (instrucción del doctor) ── */
+.td-estado {
+  max-width: 200px;
+  vertical-align: top !important;
+  padding-top: 12px !important;
+}
+
+.col-instruccion {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tooltip-texto-largo .tooltip-inner {
+  max-width: 350px;
+  white-space: normal;
+  word-wrap: break-word;
+  text-align: left;
+  padding: 8px 12px;
+  line-height: 1.45;
+}
+
 /* ── Lista de info ── */
 .info-list li {
   padding: 6px 0;
