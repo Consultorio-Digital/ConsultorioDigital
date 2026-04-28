@@ -43,13 +43,22 @@
         {# PASO 1 — Seleccionar cita #}
         {% if not reserva_seleccionada %}
 
-          {% if reservas_activas %}
+          {% if error_24h %}
+          <div class="alert alert-danger py-2 small mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-exclamation-fill"></i>
+            No es posible cancelar con menos de 24 horas de anticipación. Contacta directamente al consultorio.
+          </div>
+          {% endif %}
+
+          {% if reservas_cancelables or reservas_bloqueadas %}
             <p class="fw-semibold mb-3">Selecciona la cita que deseas cancelar:</p>
             <form method="post">
               {% csrf_token %}
               <input type="hidden" name="action" value="seleccionar">
               <div class="d-flex flex-column gap-3 mb-4">
-                {% for reserva in reservas_activas %}
+
+                {# — Citas cancelables — #}
+                {% for reserva in reservas_cancelables %}
                 <label class="reserva-opcion border rounded-3 p-3 d-flex align-items-start gap-3" style="cursor:pointer;">
                   <input type="radio" name="reserva_id" value="{{ reserva.id }}" class="form-check-input mt-1" required>
                   <div class="flex-grow-1">
@@ -73,8 +82,43 @@
                   {% endif %}
                 </label>
                 {% endfor %}
+
+                {# — Citas bloqueadas (menos de 24 h) — #}
+                {% for reserva in reservas_bloqueadas %}
+                <div class="border rounded-3 p-3 d-flex align-items-start gap-3 opacity-50" style="background:#f8f9fa;">
+                  <i class="bi bi-lock-fill text-secondary mt-1"></i>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold text-muted">{{ reserva.consultorio.nombre }}</div>
+                    {% if reserva.profesional %}
+                      <div class="small text-muted">
+                        <i class="bi bi-person-badge me-1"></i>
+                        Dr/a. {{ reserva.profesional.usuario.nombre }} {{ reserva.profesional.usuario.apellido }}
+                      </div>
+                    {% endif %}
+                    <div class="small text-muted">
+                      <i class="bi bi-calendar3 me-1"></i>{{ reserva.fecha_reserva|date:"d/m/Y" }}
+                      &nbsp;<i class="bi bi-clock me-1"></i>{{ reserva.fecha_reserva|date:"H:i" }}
+                    </div>
+                    <div class="small text-danger mt-1">
+                      <i class="bi bi-exclamation-circle me-1"></i>
+                      Menos de 24 h — cancela llamando al consultorio
+                    </div>
+                  </div>
+                  {% if reserva.estado == "confirmada" %}
+                    <span class="badge badge-estado bg-confirmado ms-auto align-self-center">Confirmada</span>
+                  {% else %}
+                    <span class="badge badge-estado bg-pendiente ms-auto align-self-center">Pendiente</span>
+                  {% endif %}
+                </div>
+                {% endfor %}
+
               </div>
-              <button type="submit" class="btn btn-danger w-100">Continuar</button>
+              {% if reservas_cancelables %}
+                <button type="submit" class="btn btn-danger w-100">Continuar</button>
+              {% else %}
+                <button type="submit" class="btn btn-danger w-100" disabled>Continuar</button>
+                <p class="text-center text-muted small mt-2 mb-0">Todas tus citas están dentro de las próximas 24 horas.</p>
+              {% endif %}
             </form>
 
           {% else %}

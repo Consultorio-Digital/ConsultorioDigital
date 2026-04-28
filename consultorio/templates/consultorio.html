@@ -95,10 +95,11 @@
 
           {# ── Horario ── #}
           <div class="mb-3">
-            <label class="form-label reserva-label" for="slot-select">Horario</label>
-            <select id="slot-select" name="slot" class="form-select reserva-input" disabled>
-              <option value="">Primero selecciona una fecha</option>
-            </select>
+            <label class="form-label reserva-label">Horario</label>
+            <div id="slot-grid">
+              <span id="slot-placeholder" class="text-muted small">Primero selecciona una fecha</span>
+            </div>
+            <input type="hidden" name="slot" id="slot-value">
             <div id="sin-slots" class="form-text text-warning d-none">
               <i class="bi bi-exclamation-circle me-1"></i>
               No quedan horarios disponibles para esta fecha.
@@ -114,12 +115,12 @@
               class="form-control reserva-input"
               rows="3"
               placeholder="Describe brevemente el motivo de tu consulta"
-              required
             ></textarea>
+            <div class="invalid-feedback">Por favor escribe el motivo de tu consulta.</div>
           </div>
 
-          <button type="submit" id="btn-reservar" class="btn btn-primary w-100 reserva-btn" disabled>
-            Confirmar reserva
+          <button type="button" id="btn-reservar" class="btn btn-primary w-100 reserva-btn" disabled>
+            Revisar y confirmar
           </button>
 
         </form>
@@ -129,43 +130,109 @@
 
   </div>
 </div>
+
+{# ── Modal de confirmación de reserva ── #}
+<div class="modal fade" id="modal-confirmar-reserva" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+
+      <div class="modal-header border-0 pb-1">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-calendar2-check fs-5 text-primary"></i>
+          <h5 class="modal-title fw-bold mb-0">Resumen de tu cita</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body py-3">
+        <p class="text-muted small mb-3">Revisa que todo esté correcto antes de agendar:</p>
+        <ul class="list-unstyled resumen-list mb-0">
+          <li>
+            <i class="bi bi-building me-2 text-primary"></i>
+            <span id="resumen-consultorio"></span>
+          </li>
+          <li>
+            <i class="bi bi-person-badge me-2 text-primary"></i>
+            <span id="resumen-doctor"></span>
+          </li>
+          <li>
+            <i class="bi bi-calendar3 me-2 text-primary"></i>
+            <span id="resumen-fecha"></span>
+          </li>
+          <li>
+            <i class="bi bi-clock me-2 text-primary"></i>
+            <span id="resumen-hora"></span>
+          </li>
+          <li>
+            <i class="bi bi-chat-left-text me-2 text-primary"></i>
+            <span id="resumen-motivo" class="fst-italic text-muted"></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="modal-footer border-0 pt-1">
+        <button type="button"
+          class="btn btn-outline-secondary rounded-pill px-4"
+          data-bs-dismiss="modal">
+          Volver
+        </button>
+        <button type="button" id="btn-confirmar-final"
+          class="btn btn-primary rounded-pill px-4 fw-bold">
+          <i class="bi bi-check-lg me-1"></i>Sí, agendar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const regionSelect    = document.getElementById('region');
-  const comunaSelect    = document.getElementById('comuna');
-  const consultorioSel  = document.getElementById('consultorio');
-  const doctorSel       = document.getElementById('doctor-select');
-  const fechaSel        = document.getElementById('fecha-select');
-  const slotSel         = document.getElementById('slot-select');
-  const btnReservar     = document.getElementById('btn-reservar');
-  const sinDoctores     = document.getElementById('sin-doctores');
-  const sinFechas       = document.getElementById('sin-fechas');
-  const sinSlots        = document.getElementById('sin-slots');
+  const regionSelect   = document.getElementById('region');
+  const comunaSelect   = document.getElementById('comuna');
+  const consultorioSel = document.getElementById('consultorio');
+  const doctorSel      = document.getElementById('doctor-select');
+  const fechaSel       = document.getElementById('fecha-select');
+  const slotGrid       = document.getElementById('slot-grid');
+  const slotValue      = document.getElementById('slot-value');
+  const btnReservar    = document.getElementById('btn-reservar');
+  const sinDoctores    = document.getElementById('sin-doctores');
+  const sinFechas      = document.getElementById('sin-fechas');
+  const sinSlots       = document.getElementById('sin-slots');
+  const motivoEl       = document.getElementById('motivo');
+
+  // ── Helpers ──────────────────────────────────────────────────────────
 
   function reset(select, msg) {
     select.innerHTML = `<option value="">${msg}</option>`;
     select.disabled  = true;
   }
 
+  function resetSlots(msg) {
+    slotGrid.innerHTML = msg
+      ? `<span id="slot-placeholder" class="text-muted small">${msg}</span>`
+      : '';
+    slotValue.value = '';
+    sinSlots.classList.add('d-none');
+  }
+
   function checkSubmit() {
     const ok = consultorioSel.value && doctorSel.value &&
-               fechaSel.value && slotSel.value;
+               fechaSel.value && slotValue.value;
     btnReservar.disabled = !ok;
   }
 
-  // ── Región → Comuna ──
+  // ── Región → Comunas ─────────────────────────────────────────────────
   regionSelect.addEventListener('change', function () {
-    reset(comunaSelect,    'Seleccionar comuna');
-    reset(consultorioSel,  'Primero selecciona una comuna');
-    reset(doctorSel,       'Primero selecciona un consultorio');
-    reset(fechaSel,        'Primero selecciona un doctor');
-    reset(slotSel,         'Primero selecciona una fecha');
+    reset(comunaSelect,   'Seleccionar comuna');
+    reset(consultorioSel, 'Primero selecciona una comuna');
+    reset(doctorSel,      'Primero selecciona un consultorio');
+    reset(fechaSel,       'Primero selecciona un doctor');
+    resetSlots('Primero selecciona una fecha');
     sinDoctores.classList.add('d-none');
     sinFechas.classList.add('d-none');
-    sinSlots.classList.add('d-none');
     checkSubmit();
 
     if (!this.value) return;
@@ -180,15 +247,14 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   });
 
-  // ── Comuna → Consultorio ──
+  // ── Comuna → Consultorios ─────────────────────────────────────────────
   comunaSelect.addEventListener('change', function () {
     reset(consultorioSel, 'Seleccionar consultorio');
     reset(doctorSel,      'Primero selecciona un consultorio');
     reset(fechaSel,       'Primero selecciona un doctor');
-    reset(slotSel,        'Primero selecciona una fecha');
+    resetSlots('Primero selecciona una fecha');
     sinDoctores.classList.add('d-none');
     sinFechas.classList.add('d-none');
-    sinSlots.classList.add('d-none');
     checkSubmit();
 
     if (!this.value) return;
@@ -203,14 +269,13 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   });
 
-  // ── Consultorio → Doctor ──
+  // ── Consultorio → Doctores ────────────────────────────────────────────
   consultorioSel.addEventListener('change', function () {
-    reset(doctorSel,  'Cargando doctores...');
-    reset(fechaSel,   'Primero selecciona un doctor');
-    reset(slotSel,    'Primero selecciona una fecha');
+    reset(doctorSel, 'Cargando doctores...');
+    reset(fechaSel,  'Primero selecciona un doctor');
+    resetSlots('Primero selecciona una fecha');
     sinDoctores.classList.add('d-none');
     sinFechas.classList.add('d-none');
-    sinSlots.classList.add('d-none');
     checkSubmit();
 
     if (!this.value) return;
@@ -221,7 +286,9 @@ document.addEventListener('DOMContentLoaded', function () {
           reset(doctorSel, 'Sin doctores disponibles');
           sinDoctores.classList.remove('d-none');
         } else {
-          doctorSel.innerHTML = '<option value="">Seleccionar doctor</option>';
+          doctorSel.innerHTML =
+            '<option value="">Seleccionar doctor</option>' +
+            '<option value="any">⚡ Cualquier profesional disponible</option>';
           data.forEach(d => {
             doctorSel.innerHTML +=
               `<option value="${d.id}">Dr/a. ${d.nombre} — ${d.especialidad}</option>`;
@@ -231,16 +298,18 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   });
 
-  // ── Doctor → Fechas ──
+  // ── Doctor → Fechas ───────────────────────────────────────────────────
   doctorSel.addEventListener('change', function () {
     reset(fechaSel, 'Cargando fechas...');
-    reset(slotSel,  'Primero selecciona una fecha');
+    resetSlots('Primero selecciona una fecha');
     sinFechas.classList.add('d-none');
-    sinSlots.classList.add('d-none');
     checkSubmit();
 
     if (!this.value) return;
-    fetch(`/consultorio/obtener_fechas/?profesional_id=${this.value}`)
+    const url = this.value === 'any'
+      ? `/consultorio/obtener_fechas/?profesional_id=any&consultorio_id=${consultorioSel.value}`
+      : `/consultorio/obtener_fechas/?profesional_id=${this.value}`;
+    fetch(url)
       .then(r => r.json())
       .then(data => {
         if (data.length === 0) {
@@ -249,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
           fechaSel.innerHTML = '<option value="">Seleccionar fecha</option>';
           data.forEach(f => {
-            // Formatear de YYYY-MM-DD a DD/MM/YYYY para mostrar
             const [y, m, d] = f.split('-');
             fechaSel.innerHTML += `<option value="${f}">${d}/${m}/${y}</option>`;
           });
@@ -258,31 +326,85 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   });
 
-  // ── Fecha → Slots ──
+  // ── Fecha → Slots (pastillas) ─────────────────────────────────────────
   fechaSel.addEventListener('change', function () {
-    reset(slotSel, 'Cargando horarios...');
-    sinSlots.classList.add('d-none');
+    resetSlots('Cargando horarios...');
     checkSubmit();
 
     if (!this.value) return;
     const pid = doctorSel.value;
-    fetch(`/consultorio/obtener_slots/?profesional_id=${pid}&fecha=${this.value}`)
+    const url = pid === 'any'
+      ? `/consultorio/obtener_slots/?profesional_id=any&fecha=${this.value}&consultorio_id=${consultorioSel.value}`
+      : `/consultorio/obtener_slots/?profesional_id=${pid}&fecha=${this.value}`;
+    fetch(url)
       .then(r => r.json())
       .then(data => {
         if (data.length === 0) {
-          reset(slotSel, 'Sin horarios disponibles');
+          resetSlots('');
           sinSlots.classList.remove('d-none');
         } else {
-          slotSel.innerHTML = '<option value="">Seleccionar horario</option>';
-          data.forEach(s => {
-            slotSel.innerHTML += `<option value="${s.value}">${s.label}</option>`;
+          slotGrid.innerHTML = '';
+          data.forEach((s, i) => {
+            const parts    = s.label.split(' — ');
+            const hora     = parts[0];
+            const docLabel = parts[1] || '';
+
+            const pill = document.createElement('div');
+            pill.className = 'slot-pill';
+            pill.innerHTML =
+              `<input type="radio" name="_slot_radio" id="slot_${i}" value="${s.value}">` +
+              `<label for="slot_${i}">` +
+                `<span class="slot-hora">${hora}</span>` +
+                (docLabel ? `<span class="slot-doc">${docLabel}</span>` : '') +
+              `</label>`;
+            slotGrid.appendChild(pill);
+
+            pill.querySelector('input').addEventListener('change', function () {
+              slotValue.value = this.value;
+              checkSubmit();
+            });
           });
-          slotSel.disabled = false;
         }
       });
   });
 
-  slotSel.addEventListener('change', checkSubmit);
+  // ── Botón "Revisar y confirmar" → poblar modal ────────────────────────
+  btnReservar.addEventListener('click', function () {
+    if (!motivoEl.value.trim()) {
+      motivoEl.classList.add('is-invalid');
+      motivoEl.focus();
+      return;
+    }
+    motivoEl.classList.remove('is-invalid');
+
+    // Nombre del doctor
+    let doctorTexto;
+    if (doctorSel.value === 'any') {
+      const docSpan = slotGrid.querySelector('input[name="_slot_radio"]:checked + label .slot-doc');
+      doctorTexto = docSpan ? docSpan.textContent : 'Cualquier profesional';
+    } else {
+      doctorTexto = doctorSel.options[doctorSel.selectedIndex].text;
+    }
+
+    // Hora del slot seleccionado
+    const horaSpan = slotGrid.querySelector('input[name="_slot_radio"]:checked + label .slot-hora');
+    const horaTexto = horaSpan ? horaSpan.textContent : '';
+
+    document.getElementById('resumen-consultorio').textContent =
+      consultorioSel.options[consultorioSel.selectedIndex].text;
+    document.getElementById('resumen-doctor').textContent  = doctorTexto;
+    document.getElementById('resumen-fecha').textContent   =
+      fechaSel.options[fechaSel.selectedIndex].text;
+    document.getElementById('resumen-hora').textContent    = horaTexto;
+    document.getElementById('resumen-motivo').textContent  = motivoEl.value.trim();
+
+    new bootstrap.Modal(document.getElementById('modal-confirmar-reserva')).show();
+  });
+
+  // ── "Sí, agendar" → submit real ──────────────────────────────────────
+  document.getElementById('btn-confirmar-final').addEventListener('click', function () {
+    document.getElementById('frm-reserva').submit();
+  });
 });
 </script>
 {% endblock %}

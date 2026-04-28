@@ -30,7 +30,12 @@ def seleccionar_region(request):
         consultorio_id = request.POST.get('consultorio')
         profesional_id = request.POST.get('profesional_id')
         motivo         = request.POST.get('motivo', '').strip()
-        slot           = request.POST.get('slot')  # "YYYY-MM-DD HH:MM"
+        slot           = request.POST.get('slot')  # "YYYY-MM-DD HH:MM" o "YYYY-MM-DD HH:MM|doctor_id"
+
+        # Si el paciente eligió "Cualquier profesional", el doctor real
+        # viene codificado en el slot como "datetime|doctor_id"
+        if profesional_id == 'any' and slot and '|' in slot:
+            slot, profesional_id = slot.rsplit('|', 1)
 
         if not motivo:
             return redirect('consultorio')
@@ -172,25 +177,44 @@ def obtener_doctores(request):
 
 @login_required(login_url='/login/')
 def obtener_fechas(request):
-    """Fechas con disponibilidad declarada para un profesional (hoy en adelante)."""
+    """Fechas con disponibilidad declarada para un profesional (hoy en adelante).
+    Si profesional_id='any', devuelve la unión de fechas de todos los doctores
+    del consultorio indicado por consultorio_id."""
     profesional_id = request.GET.get('profesional_id')
     if not profesional_id:
         return JsonResponse([], safe=False)
 
-    hoy    = timezone.localdate()
-    fechas = (
-        Disponibilidad.objects
-        .filter(profesional_id=profesional_id, fecha__gte=hoy)
-        .values_list('fecha', flat=True)
-        .distinct()
-        .order_by('fecha')
-    )
+    hoy = timezone.localdate()
+
+    if profesional_id == 'any':
+        consultorio_id = request.GET.get('consultorio_id')
+        if not consultorio_id:
+            return JsonResponse([], safe=False)
+        fechas = (
+            Disponibilidad.objects
+            .filter(profesional__consultorio_id=consultorio_id, fecha__gte=hoy)
+            .values_list('fecha', flat=True)
+            .distinct()
+            .order_by('fecha')
+        )
+    else:
+        fechas = (
+            Disponibilidad.objects
+            .filter(profesional_id=profesional_id, fecha__gte=hoy)
+            .values_list('fecha', flat=True)
+            .distinct()
+            .order_by('fecha')
+        )
+
     return JsonResponse([str(f) for f in fechas], safe=False)
 
 
 @login_required(login_url='/login/')
 def obtener_slots(request):
-    """Slots de 30 min libres para un profesional en una fecha."""
+    """Slots de 30 min libres para un profesional en una fecha.
+    Si profesional_id='any', agrega los slots de todos los doctores del
+    consultorio; el valor de cada slot lleva el id del doctor codificado:
+    'YYYY-MM-DD HH:MM|doctor_id'."""
     profesional_id = request.GET.get('profesional_id')
     fecha_str      = request.GET.get('fecha')
 
@@ -202,12 +226,62 @@ def obtener_slots(request):
     except ValueError:
         return JsonResponse([], safe=False)
 
+    if profesional_id == 'any':
+        consultorio_id = request.GET.get('consultorio_id')
+        if not consultorio_id:
+            return JsonResponse([], safe=False)
+
+        disponibilidades = (
+            Disponibilidad.objects
+            .filter(profesional__consultorio_id=consultorio_id, fecha=fecha)
+            .select_related('profesional__usuario')
+        )
+
+        # Slots ocupados por cualquier doctor de este consultorio en esta fecha
+        taken_qs = (
+            Reserva.objects
+            .filter(
+                profesional__consultorio_id=consultorio_id,
+                fecha_reserva__date=fecha,
+            )
+            .exclude(estado='cancelada')
+            .values_list('profesional_id', 'fecha_reserva')
+        )
+        taken = {
+            (pid, timezone.localtime(dt).strftime("%H:%M"))
+            for pid, dt in taken_qs
+        }
+
+        seen = set()
+        free = []
+        for disp in disponibilidades:
+            prof    = disp.profesional
+            current = datetime.combine(fecha, disp.hora_inicio)
+            end     = datetime.combine(fecha, disp.hora_fin)
+            while current < end:
+                key = (prof.id, current.strftime("%H:%M"))
+                if key not in seen and key not in taken:
+                    seen.add(key)
+                    nombre = f"Dr/a. {prof.usuario.nombre} {prof.usuario.apellido}"
+                    free.append({
+                        'value': f"{current.strftime('%Y-%m-%d %H:%M')}|{prof.id}",
+                        'label': f"{current.strftime('%H:%M')} — {nombre}",
+                        '_sort': current.strftime("%H:%M"),
+                    })
+                current += timedelta(minutes=30)
+
+        free.sort(key=lambda x: x['_sort'])
+        for s in free:
+            del s['_sort']
+
+        return JsonResponse(free, safe=False)
+
+    # ── Doctor específico (comportamiento original) ──────────────────────
     disponibilidades = Disponibilidad.objects.filter(
         profesional_id=profesional_id,
         fecha=fecha,
     )
 
-    # Generar todos los slots posibles (bloques de 30 min)
     all_slots = []
     for disp in disponibilidades:
         current = datetime.combine(fecha, disp.hora_inicio)
@@ -216,7 +290,6 @@ def obtener_slots(request):
             all_slots.append(current)
             current += timedelta(minutes=30)
 
-    # Slots ya ocupados
     taken_qs = (
         Reserva.objects
         .filter(profesional_id=profesional_id, fecha_reserva__date=fecha)
@@ -343,6 +416,12 @@ def cancelar_hora(request: HttpRequest):
                         id=confirmar_id,
                         paciente__usuario__rut=request.user.username,
                     )
+                    # Segunda validación: respetar la regla de 24 h aunque
+                    # alguien manipule el form directamente
+                    if reserva.fecha_reserva <= timezone.now() + timedelta(hours=24):
+                        request.session['error_24h'] = True
+                        request.session.pop('cancelacion', None)
+                        return redirect('cancelar_hora')
                     reserva.estado             = 'cancelada'
                     reserva.motivo_cancelacion = motivo_can or None
                     reserva.save()
@@ -359,9 +438,11 @@ def cancelar_hora(request: HttpRequest):
     # ── GET: renderizar según estado de sesión ──
     cancelacion       = request.session.get('cancelacion')
     codigo_incorrecto = request.session.pop('codigo_incorrecto', False)
+    error_24h         = request.session.pop('error_24h', False)
 
+    limite_cancelacion = timezone.now() + timedelta(hours=24)
     try:
-        reservas_activas = (
+        qs_activas = (
             Reserva.objects
             .filter(
                 paciente__usuario__rut=request.user.username,
@@ -370,8 +451,11 @@ def cancelar_hora(request: HttpRequest):
             .select_related('consultorio', 'profesional__usuario')
             .order_by('fecha_reserva')
         )
+        reservas_cancelables = qs_activas.filter(fecha_reserva__gt=limite_cancelacion)
+        reservas_bloqueadas  = qs_activas.filter(fecha_reserva__lte=limite_cancelacion)
     except Exception:
-        reservas_activas = []
+        reservas_cancelables = []
+        reservas_bloqueadas  = []
 
     reserva_seleccionada = None
     codigo_generado      = None
@@ -386,10 +470,12 @@ def cancelar_hora(request: HttpRequest):
 
     return render(request, 'cancelar_hora.html', {
         'title'               : 'Cancelar hora',
-        'reservas_activas'    : reservas_activas,
+        'reservas_cancelables': reservas_cancelables,
+        'reservas_bloqueadas' : reservas_bloqueadas,
         'reserva_seleccionada': reserva_seleccionada,
         'codigo_generado'     : codigo_generado,
         'codigo_incorrecto'   : codigo_incorrecto,
+        'error_24h'           : error_24h,
     })
 
 @login_required(login_url='/login/')

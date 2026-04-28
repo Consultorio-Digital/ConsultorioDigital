@@ -52,3 +52,81 @@ textarea.reserva-input {
 .reserva-btn:hover {
   background-color: #1a6fef;
 }
+
+/* ── Cuadrícula de pastillas de horario ── */
+#slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 36px;
+  align-items: flex-start;
+}
+
+#slot-placeholder {
+  color: #A8A8A8;
+  font-size: 0.9rem;
+  padding: 6px 2px;
+}
+
+.slot-pill input[type="radio"] {
+  display: none;
+}
+
+.slot-pill label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #dee2e6;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  line-height: 1.2;
+}
+
+.slot-hora {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.slot-doc {
+  font-size: 0.72rem;
+  color: #888;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.slot-pill label:hover {
+  border-color: #2B7FFF;
+}
+
+.slot-pill label:hover .slot-hora,
+.slot-pill label:hover .slot-doc {
+  color: #2B7FFF;
+}
+
+.slot-pill input[type="radio"]:checked + label {
+  background: #2B7FFF;
+  border-color: #2B7FFF;
+  box-shadow: 0 2px 6px rgba(43,127,255,0.3);
+}
+
+.slot-pill input[type="radio"]:checked + label .slot-hora,
+.slot-pill input[type="radio"]:checked + label .slot-doc {
+  color: #fff;
+}
+
+/* ── Lista resumen del modal ── */
+.resumen-list li {
+  padding: 7px 0;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.resumen-list li:last-child {
+  border-bottom: none;
+}
